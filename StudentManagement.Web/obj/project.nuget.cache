@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "+GfBqS9d2WE=",
+  "success": true,
+  "projectFilePath": "/Users/biratsapkota/RiderProjects/Student Management System/StudentManagement.Web/StudentManagement.Web.csproj",
+  "expectedPackageFiles": [
+    "/Users/biratsapkota/.nuget/packages/microsoft.aspnetcore.openapi/9.0.19/microsoft.aspnetcore.openapi.9.0.19.nupkg.sha512",
+    "/Users/biratsapkota/.nuget/packages/microsoft.openapi/1.6.17/microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}
