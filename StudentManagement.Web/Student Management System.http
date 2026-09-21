@@ -4,3 +4,164 @@ GET {{Student_Management_System_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+POST http://localhost:5280/api/Auth/register
+Content-Type: application/json
+
+{
+  "email": "student2@test.com",
+  "username": "student01",
+  "password": "Password123456!"
+}
+
+###
+PUT http://localhost:5280/api/User/4/approve
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0IiwidW5pcXVlX25hbWUiOiJzdHVkZW50MDEiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJTdHVkZW50IiwiZXhwIjoxNzg5MzY2MjQ0LCJpc3MiOiJTdHVkZW50TWFuYWdlbWVudFN5c3RlbSIsImF1ZCI6IlN0dWRlbnRNYW5hZ2VtZW50U3lzdGVtVXNlcnMifQ.u8AZw60IEo1bFQWiepCd1bWemXByuhuEXl_r2m9TIvg
+Content-Type: application/json
+
+{
+  "isApproved": true
+}
+
+###
+POST http://localhost:5280/api/Auth/login
+Content-Type: application/json
+
+{
+  "username": "student01",
+  "password": "Password123456!"
+}
+
+###
+POST http://localhost:5280/api/Auth/register
+Content-Type: application/json
+
+{
+  "username": "student02",
+  "email": "student02@example.com",
+  "password": "Password123!"
+}
+
+###
+GET http://localhost:5280/api/User/admin-test
+
+
+###
+GET http://localhost:5280/api/User/admin-test
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0IiwidW5pcXVlX25hbWUiOiJzdHVkZW50MDEiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJTdHVkZW50IiwiZXhwIjoxNzg5MTI4MzgxLCJpc3MiOiJTdHVkZW50TWFuYWdlbWVudFN5c3RlbSIsImF1ZCI6IlN0dWRlbnRNYW5hZ2VtZW50U3lzdGVtVXNlcnMifQ.NkfewbJRIAQgVI2SfCSha02oCwICLgkoBhR33IVJC4Q
+
+
+###
+POST http://localhost:5280/api/Auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "UV/yWYUwvj6sebujsM4zAn9KH4Kz72UCzu0vWh8uRjU89ypkhmWVS0dNninKqzshO8fpBWQLhfDCrwYI8030oQ=="
+}
+
+####
+POST http://localhost:5280/api/Auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "Pobhe5oHwvyEN1DbylK/pXWSFSA2mvVzN0ftaW1C8qrmUqADfFKrxOLXEdZ+VREHwyK+ynjrmWVZmRl0A/iTDw=="
+}
+
+
+###
+GET http://localhost:5280/api/Student/results
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjQiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoic3R1ZGVudDAxIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiU3R1ZGVudCIsImV4cCI6MTc4OTQ1Mzc1NSwiaXNzIjoiU3R1ZGVudE1hbmFnZW1lbnRTeXN0ZW0iLCJhdWQiOiJTdHVkZW50TWFuYWdlbWVudFN5c3RlbVVzZXJzIn0.52r5z8zHL_NBAVoi2pPGHd23Bsod54flOQoIG2IXoh8
+
+####
+GET http://localhost:5280/api/Student/results
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjQiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoic3R1ZGVudDAxIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiU3R1ZGVudCIsImV4cCI6MTc4OTUzMjgzMCwiaXNzIjoiU3R1ZGVudE1hbmFnZW1lbnRTeXN0ZW0iLCJhdWQiOiJTdHVkZW50TWFuYWdlbWVudFN5c3RlbVVzZXJzIn0.OI6vdkCcSwetIzR_Bt62z0xUdyOwqTcEO2UqSTfRdJA
+
+###
+PUT http://localhost:5280/api/User/4/approve
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW4iLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbiIsImV4cCI6MTc4OTQ1MDYyOCwiaXNzIjoiU3R1ZGVudE1hbmFnZW1lbnRTeXN0ZW0iLCJhdWQiOiJTdHVkZW50TWFuYWdlbWVudFN5c3RlbVVzZXJzIn0.V8bFeW-BFFR2SiluAHbtbipiyBex3-6q41REFcodp2c
+Content-Type: application/json
+
+{
+  "isApproved": true,
+  "firstName": "John",
+  "lastName": "Doe",
+  "dateOfBirth": "2010-05-15",
+  "gender": 0,
+  "phoneNumber": "9800000000",
+  "address": "Kathmandu",
+  "schoolClassId": 1
+}
+
+####
+POST http://localhost:5280/api/Auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "Admin@123"
+}
+
+###
+GET http://localhost:5280/api/Student/debug-user
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjMiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoic3R1ZGVudDAyIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiU3R1ZGVudCIsImV4cCI6MTc4OTQ1MjgyOCwiaXNzIjoiU3R1ZGVudE1hbmFnZW1lbnRTeXN0ZW0iLCJhdWQiOiJTdHVkZW50TWFuYWdlbWVudFN5c3RlbVVzZXJzIn0.7Laj50FOcT-1X8keDx6MfAUdyRpA3zGd0A4RAz5sb_s
+
+#####
+POST http://localhost:5280/api/Auth/login
+Content-Type: application/json
+
+{
+  "username": "teacher01",
+  "password": "Teacher@123"
+}
+
+###
+
+POST http://localhost:5280/api/Teacher/exams/1/marks
+Authorization: Bearer eeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjYiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoidGVhY2hlcjAxIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiVGVhY2hlciIsImV4cCI6MTc4OTk4MjIxMCwiaXNzIjoiU3R1ZGVudE1hbmFnZW1lbnRTeXN0ZW0iLCJhdWQiOiJTdHVkZW50TWFuYWdlbWVudFN5c3RlbVVzZXJzIn0.3ObapUzmyKS31i3UGoqZs89INlk5BLRunY2m1bAcQT8
+Content-Type: application/json
+
+{
+  "studentId": 2,
+  "subjectId": 1,
+  "marksObtained": 85,
+  "maxMarks": 100
+}
+
+###
+PUT http://localhost:5280/api/Admin/marks/1/review
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW4iLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbiIsImV4cCI6MTc4OTk4MjQ2NSwiaXNzIjoiU3R1ZGVudE1hbmFnZW1lbnRTeXN0ZW0iLCJhdWQiOiJTdHVkZW50TWFuYWdlbWVudFN5c3RlbVVzZXJzIn0.yRJhAHeRba3vv5MAHV1jDRNq9sSrHOO_PuacHIdF2dk
+Content-Type: application/json
+
+{
+  "isApproved": true,
+  "comment": "Marks verified"
+}
+###
+POST http://localhost:5280/api/Auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "Admin@123"
+}
+
+###
+
+PUT http://localhost:5280/api/Admin/exams/1/publish
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW4iLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbiIsImV4cCI6MTc4OTk4Njc4NywiaXNzIjoiU3R1ZGVudE1hbmFnZW1lbnRTeXN0ZW0iLCJhdWQiOiJTdHVkZW50TWFuYWdlbWVudFN5c3RlbVVzZXJzIn0.nYt61pTIkZsKTJ-8ickb8JRgAeMcYC2I7nwIHztmNog
+
+###
+
+GET http://localhost:5280/api/Student/results
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjMiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoic3R1ZGVudDAyIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiU3R1ZGVudCIsImV4cCI6MTc4OTk4Njk1MiwiaXNzIjoiU3R1ZGVudE1hbmFnZW1lbnRTeXN0ZW0iLCJhdWQiOiJTdHVkZW50TWFuYWdlbWVudFN5c3RlbVVzZXJzIn0.dtBbG33_W-mUNPXuqV_5Ghbn-6rRL8pqHTFAB0crDfo
+
+###
+POST http://localhost:5280/api/Auth/login
+Content-Type: application/json
+
+{
+  "username": "student02",
+  "password": "Password123!"
+}
+
+###

@@ -10,6 +10,6 @@ public class StudentPromotion
     public int ToSchoolClassId { get; set; }
     public int AcademicYear { get; set; }
     public PromotionStatus Status { get; set; }
-    public int ApprovedByUserId { get; set; }
+    public int? ReviewedByUserId { get; set; }
     public DateTime PromotionDate { get; set; }
 }

@@ -1,0 +1,44 @@
+# Build output
+**/bin/
+**/obj/
+
+# Rider
+.idea/
+*.sln.DotSettings.user
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# VS Code
+.vscode/
+
+# Test results
+TestResults/
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Publish output
+**/publish/
+**/Release/
+**/Debug/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
