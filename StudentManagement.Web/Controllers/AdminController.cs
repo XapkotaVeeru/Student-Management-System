@@ -2,8 +2,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StudentManagement.Application.DTOs.Marks;
+using StudentManagement.Application.DTOs.ReExam;
 using StudentManagement.Application.Features.Exams.Commands.PublishExam;
 using StudentManagement.Application.Features.Marks.Commands.ReviewMark;
+using StudentManagement.Application.Features.ReExams.Commands.ReviewReExam;
 
 namespace Student_Management_System.Controllers;
 
@@ -51,6 +53,21 @@ public class AdminController : ControllerBase
         if (!result.Status)
             return BadRequest(result);
 
+        return Ok(result);
+    }
+    
+    [HttpPut("re-exams/{applicationId}/review")]
+    public async Task<IActionResult> ReviewReExam(int applicationId, ReviewReExamDto dto, CancellationToken cancellationToken)
+    {
+        var command = new ReviewReExamCommand(applicationId, dto);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result.Status)
+        {
+            return BadRequest(result);
+        }
+        
         return Ok(result);
     }
 }

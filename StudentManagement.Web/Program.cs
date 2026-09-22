@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -20,7 +21,12 @@ builder.Services.AddDbContext<StudentManagementDbContext>(options =>
 builder.Services.AddScoped<IApplicationDbContext>(
     provider => provider.GetRequiredService<StudentManagementDbContext>());
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter());
+    });
 
 builder.Services.AddHttpContextAccessor();
 

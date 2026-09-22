@@ -165,3 +165,26 @@ Content-Type: application/json
 }
 
 ###
+
+POST http://localhost:5280/api/Student/re-exams
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjQiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoic3R1ZGVudDAxIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiU3R1ZGVudCIsImV4cCI6MTc5MDA2NTE2OSwiaXNzIjoiU3R1ZGVudE1hbmFnZW1lbnRTeXN0ZW0iLCJhdWQiOiJTdHVkZW50TWFuYWdlbWVudFN5c3RlbVVzZXJzIn0.YvUeKY-G2uXFIlXwxYxy-_An0cMujdnp4UGb7i1ojWM
+Content-Type: application/json
+
+{
+  "examId": 1,
+  "subjectId": 1,
+  "reason": "I would like to apply for a re-examination."
+}
+
+###
+PUT http://localhost:5280/api/Admin/re-exams/1/review
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW4iLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbiIsImV4cCI6MTc5MDA2NTM1MCwiaXNzIjoiU3R1ZGVudE1hbmFnZW1lbnRTeXN0ZW0iLCJhdWQiOiJTdHVkZW50TWFuYWdlbWVudFN5c3RlbVVzZXJzIn0.v9Ng8QLsKDF4_fWUmAhgz9PCz8H5qIRwLNO_riOIWt4
+Content-Type: application/json
+
+{
+  "status": "Approved",
+  "reason": "Student is eligible for the re-examination."
+}
+
+
+###

@@ -1,6 +1,8 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StudentManagement.Application.DTOs.ReExam;
+using StudentManagement.Application.Features.ReExams.Commands.ApplyReExam;
 using StudentManagement.Application.Features.Students.Queries.GetMyProfile;
 using StudentManagement.Application.Features.Students.Queries.GetMyResults;
 using StudentManagement.Application.Features.Students.Queries.GetMySubjects;
@@ -62,6 +64,21 @@ public class StudentController : ControllerBase
         if (!result.Status)
         {
             return NotFound(result);
+        }
+
+        return Ok(result);
+    }
+
+    [HttpPost("re-exams")]
+    public async Task<IActionResult> ApplyForReExam(ApplyReExamDto dto, CancellationToken cancellationToken)
+    {
+        var command = new ApplyReExamCommand(dto);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result.Status)
+        {
+            return BadRequest(result);
         }
 
         return Ok(result);

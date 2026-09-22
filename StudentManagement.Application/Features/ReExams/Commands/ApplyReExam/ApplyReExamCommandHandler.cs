@@ -20,7 +20,7 @@ public class ApplyReExamCommandHandler
         _currentUserService = currentUserService;
     }
 
-    public async Task<ResponseDto<ReExamResponseDto>> Handle(ApplyReExamCommand request, 
+    public async Task<ResponseDto<ReExamResponseDto>> Handle(ApplyReExamCommand request,
         CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId;
@@ -35,9 +35,8 @@ public class ApplyReExamCommandHandler
             };
         }
 
-        var student = await _context.Students.FirstOrDefaultAsync(
-                x => x.UserId == userId,
-                cancellationToken);
+        var student = await _context.Students.FirstOrDefaultAsync(x => x.UserId == userId,
+            cancellationToken);
 
         if (student == null)
         {
@@ -49,9 +48,8 @@ public class ApplyReExamCommandHandler
             };
         }
 
-        var exam = await _context.Exams.FirstOrDefaultAsync(
-                x => x.Id == request.Request.ExamId,
-                cancellationToken);
+        var exam = await _context.Exams.FirstOrDefaultAsync(x => x.Id == request.Request.ExamId,
+            cancellationToken);
 
         if (exam == null)
         {
@@ -63,9 +61,8 @@ public class ApplyReExamCommandHandler
             };
         }
 
-        var subject = await _context.Subjects.FirstOrDefaultAsync(
-                x => x.Id == request.Request.SubjectId,
-                cancellationToken);
+        var subject = await _context.Subjects.FirstOrDefaultAsync(x => x.Id == request.Request.SubjectId,
+            cancellationToken);
 
         if (subject == null)
         {
@@ -88,24 +85,28 @@ public class ApplyReExamCommandHandler
         }
 
         var mark = await _context.ExamMarks.FirstOrDefaultAsync(
-                x =>
-                    x.ExamId == request.Request.ExamId &&
-                    x.StudentId == student.Id &&
-                    x.SubjectId == request.Request.SubjectId,
-                cancellationToken);
-
-        if (mark == null)
+            x =>
+                x.ExamId == request.Request.ExamId &&
+                x.StudentId == student.Id &&
+                x.SubjectId == request.Request.SubjectId,
+            cancellationToken);
+        
+        if (mark != null)
         {
-            return new ResponseDto<ReExamResponseDto>
+            var percentage = (mark.MarksObtained / mark.MaxMarks) * 100;
+
+            if (percentage >= 40)
             {
-                Status = false,
-                Message = "No mark found for this subject",
-                Data = null
-            };
+                return new ResponseDto<ReExamResponseDto>
+                {
+                    Status = false,
+                    Message = "Students who passed cannot apply for a re-exam",
+                    Data = null
+                };
+            }
         }
 
-        var existingApplication = await _context.ReExamApplications.FirstOrDefaultAsync(
-                x =>
+        var existingApplication = await _context.ReExamApplications.FirstOrDefaultAsync(x =>
                     x.ExamId == request.Request.ExamId &&
                     x.StudentId == student.Id &&
                     x.SubjectId == request.Request.SubjectId,
@@ -131,9 +132,7 @@ public class ApplyReExamCommandHandler
             AppliedAt = DateTime.UtcNow
         };
 
-        await _context.ReExamApplications.AddAsync(
-            application,
-            cancellationToken);
+        await _context.ReExamApplications.AddAsync(application, cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
 
