@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Student_Management_System.BackgroundServices;
 using StudentManagement.Application;
 using StudentManagement.Application.Interfaces;
 using StudentManagement.Application.Services;
@@ -35,6 +36,8 @@ builder.Services.AddMediatR(cfg =>
         typeof(StudentManagement.Application.AssemblyMarker).Assembly));
 
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddHostedService<RefreshTokenCleanupService>();
 
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 

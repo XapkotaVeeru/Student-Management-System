@@ -45,6 +45,10 @@ public class RefreshTokenCommandHandler :IRequestHandler<RefreshTokenCommand, Re
 
         if (refreshToken.ExpiresAt <= DateTime.UtcNow)
         {
+            refreshToken.RevokedAt = DateTime.UtcNow;
+
+            await _applicationDbContext.SaveChangesAsync(cancellationToken);
+
             return new ResponseDto<LoginResponseDto>
             {
                 Status = false,
