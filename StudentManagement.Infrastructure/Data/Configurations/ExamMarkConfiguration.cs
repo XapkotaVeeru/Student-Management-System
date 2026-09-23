@@ -23,6 +23,9 @@ public class ExamMarkConfiguration : IEntityTypeConfiguration<ExamMark>
 
         builder.Property(x => x.UpdatedOn)
             .IsRequired();
+        
+        builder.Property(x => x.IsReExam)
+            .HasDefaultValue(false);
 
         builder.Property(x => x.Status)
             .IsRequired()

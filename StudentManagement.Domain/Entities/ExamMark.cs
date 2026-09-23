@@ -14,4 +14,5 @@ public class ExamMark
     public DateTime EnteredOn { get; set; }
     public DateTime UpdatedOn { get; set; }
     public MarkStatus Status { get; set; }
+    public bool IsReExam { get; set; }
 }

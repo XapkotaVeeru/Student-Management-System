@@ -14,9 +14,9 @@ public class RefreshTokenCleanupService : BackgroundService
         _logger = logger;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        while (!stoppingToken.IsCancellationRequested)
+        while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
@@ -27,13 +27,13 @@ public class RefreshTokenCleanupService : BackgroundService
 
                 var expiredTokens = await context.RefreshTokens
                     .Where(x => x.ExpiresAt <= DateTime.UtcNow)
-                    .ToListAsync(stoppingToken);
+                    .ToListAsync(cancellationToken);
 
                 if (expiredTokens.Count > 0)
                 {
                     context.RefreshTokens.RemoveRange(expiredTokens);
 
-                    await context.SaveChangesAsync(stoppingToken);
+                    await context.SaveChangesAsync(cancellationToken);
 
                     _logger.LogInformation(
                         "Deleted {Count} expired refresh tokens.",
@@ -48,7 +48,7 @@ public class RefreshTokenCleanupService : BackgroundService
 
             await Task.Delay(
                 TimeSpan.FromHours(1),
-                stoppingToken);
+                cancellationToken);
         }
     }
 }
