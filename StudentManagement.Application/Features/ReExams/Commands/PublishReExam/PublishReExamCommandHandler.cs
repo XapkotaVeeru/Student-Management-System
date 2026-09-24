@@ -5,21 +5,23 @@ using StudentManagement.Application.DTOs.Marks;
 using StudentManagement.Application.Interfaces;
 using StudentManagement.Domain.Enums;
 
-namespace StudentManagement.Application.Features.Marks.Commands.SubmitMark;
+namespace StudentManagement.Application.Features.ReExams.Commands.PublishReExam;
 
-public class SubmitMarkCommandHandler
-    : IRequestHandler<SubmitMarkCommand, ResponseDto<MarkResponseDto>>
+public class PublishReExamCommandHandler
+    : IRequestHandler<PublishReExamCommand, ResponseDto<MarkResponseDto>>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
 
-    public SubmitMarkCommandHandler(IApplicationDbContext context, ICurrentUserService currentUserService)
+    public PublishReExamCommandHandler(IApplicationDbContext context, 
+        ICurrentUserService currentUserService)
     {
         _context = context;
         _currentUserService = currentUserService;
     }
 
-    public async Task<ResponseDto<MarkResponseDto>> Handle(SubmitMarkCommand request, CancellationToken cancellationToken)
+    public async Task<ResponseDto<MarkResponseDto>> Handle(PublishReExamCommand request, 
+        CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId;
 
@@ -33,22 +35,8 @@ public class SubmitMarkCommandHandler
             };
         }
 
-        var teacher = await _context.Teachers.FirstOrDefaultAsync( x => x.UserId == userId,
-                cancellationToken);
-
-        if (teacher == null)
-        {
-            return new ResponseDto<MarkResponseDto>
-            {
-                Status = false,
-                Message = "Teacher profile not found",
-                Data = null
-            };
-        }
-
         var mark = await _context.ExamMarks.FirstOrDefaultAsync(
-                x => x.Id == request.MarkId,
-                cancellationToken);
+            x => x.Id == request.MarkId, cancellationToken);
 
         if (mark == null)
         {
@@ -60,28 +48,60 @@ public class SubmitMarkCommandHandler
             };
         }
 
-        if (mark.EnteredByTeacherId != teacher.Id)
+        if (!mark.IsReExam)
         {
             return new ResponseDto<MarkResponseDto>
             {
                 Status = false,
-                Message = "You can only submit marks entered by you",
+                Message = "Only re-exam marks can be published using this endpoint",
                 Data = null
             };
         }
 
-        if (mark.Status != MarkStatus.Draft)
+        if (mark.Status != MarkStatus.Approved)
         {
             return new ResponseDto<MarkResponseDto>
             {
                 Status = false,
-                Message = "Only draft marks can be submitted",
+                Message = "Only approved re-exam marks can be published",
                 Data = null
             };
         }
 
-        mark.Status = MarkStatus.Submitted;
+        if (mark.IsPublished)
+        {
+            return new ResponseDto<MarkResponseDto>
+            {
+                Status = false,
+                Message = "Re-exam mark is already published",
+                Data = null
+            };
+        }
+
+        var reExamApplication = await _context.ReExamApplications
+            .FirstOrDefaultAsync(
+                x =>
+                    x.ExamId == mark.ExamId &&
+                    x.StudentId == mark.StudentId &&
+                    x.SubjectId == mark.SubjectId &&
+                    x.Status == ReExamStatus.Approved,
+                cancellationToken);
+
+        if (reExamApplication == null)
+        {
+            return new ResponseDto<MarkResponseDto>
+            {
+                Status = false,
+                Message = "Approved re-exam application not found",
+                Data = null
+            };
+        }
+
+        mark.IsPublished = true;
         mark.UpdatedOn = DateTime.UtcNow;
+
+        reExamApplication.Status = ReExamStatus.Completed;
+        reExamApplication.ReviewedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -97,13 +117,13 @@ public class SubmitMarkCommandHandler
             UpdatedOn = mark.UpdatedOn,
             Status = mark.Status,
             IsReExam = mark.IsReExam,
-            IsPublished =  mark.IsPublished
+            IsPublished = mark.IsPublished
         };
 
         return new ResponseDto<MarkResponseDto>
         {
             Status = true,
-            Message = "Mark submitted successfully",
+            Message = "Re-exam mark published successfully",
             Data = response
         };
     }

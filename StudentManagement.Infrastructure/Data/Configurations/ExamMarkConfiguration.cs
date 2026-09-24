@@ -26,6 +26,9 @@ public class ExamMarkConfiguration : IEntityTypeConfiguration<ExamMark>
         
         builder.Property(x => x.IsReExam)
             .HasDefaultValue(false);
+        
+        builder.Property(x => x.IsPublished)
+            .HasDefaultValue(false);
 
         builder.Property(x => x.Status)
             .IsRequired()
@@ -56,7 +59,8 @@ public class ExamMarkConfiguration : IEntityTypeConfiguration<ExamMark>
             {
                 x.ExamId,
                 x.StudentId,
-                x.SubjectId
+                x.SubjectId,
+                x.IsReExam
             })
             .IsUnique();
     }

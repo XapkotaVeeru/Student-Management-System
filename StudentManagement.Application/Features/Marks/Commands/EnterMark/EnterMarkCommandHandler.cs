@@ -164,7 +164,8 @@ public class EnterMarkCommandHandler
 
             EnteredOn = now,
             UpdatedOn = now,
-            Status = MarkStatus.Draft
+            Status = MarkStatus.Draft,
+            IsReExam = false
         };
 
         await _context.ExamMarks.AddAsync(
@@ -183,7 +184,9 @@ public class EnterMarkCommandHandler
             MaxMarks = mark.MaxMarks,
             EnteredOn = mark.EnteredOn,
             UpdatedOn = mark.UpdatedOn,
-            Status = mark.Status
+            Status = mark.Status,
+            IsReExam = mark.IsReExam,
+            IsPublished = mark.IsPublished
         };
         
         return new ResponseDto<MarkResponseDto>

@@ -35,20 +35,15 @@ public class RefreshTokenCleanupService : BackgroundService
 
                     await context.SaveChangesAsync(cancellationToken);
 
-                    _logger.LogInformation(
-                        "Deleted {Count} expired refresh tokens.",
-                        expiredTokens.Count);
+                    _logger.LogInformation("Deleted {Count} expired refresh tokens.", expiredTokens.Count);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "An error occurred while cleaning up expired refresh tokens.");
+                _logger.LogError(ex, "An error occurred while cleaning up expired refresh tokens.");
             }
 
-            await Task.Delay(
-                TimeSpan.FromHours(1),
-                cancellationToken);
+            await Task.Delay(TimeSpan.FromHours(1), cancellationToken);
         }
     }
 }

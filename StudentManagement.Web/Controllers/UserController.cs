@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StudentManagement.Application.DTOs.Users;
 using StudentManagement.Application.Features.Users.Commands.ApproveUser;
+using StudentManagement.Application.Features.Users.Queries.GetUserById;
+using StudentManagement.Application.Features.Users.Queries.GetUsers;
 using StudentManagement.Application.Interfaces;
 
 namespace Student_Management_System.Controllers;
@@ -32,5 +34,34 @@ public class UserController : ControllerBase
         return Ok(result);
     }
     
+    [HttpGet]
+    public async Task<IActionResult> GetUsers(CancellationToken cancellationToken)
+    {
+        var query = new GetUsersQuery();
 
+        var result = await _mediator.Send(query, cancellationToken);
+
+        if (!result.Status)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
+    
+    [HttpGet("{id}")]
+
+    public async Task<IActionResult> GetUser(int id, CancellationToken cancellationToken)
+    {
+        var query = new GetUserByIdQuery(id);
+
+        var result = await _mediator.Send(query, cancellationToken);
+
+        if (!result.Status)
+        {
+            return BadRequest(result);
+        }
+        
+        return Ok(result);
+    }
 }

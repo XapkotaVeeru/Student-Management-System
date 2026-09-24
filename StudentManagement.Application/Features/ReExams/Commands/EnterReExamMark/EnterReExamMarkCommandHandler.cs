@@ -134,7 +134,8 @@ public class EnterReExamMarkCommandHandler : IRequestHandler<EnterReExamMarkComm
                 x =>
                     x.ExamId == application.ExamId &&
                     x.StudentId == application.StudentId &&
-                    x.SubjectId == application.SubjectId,
+                    x.SubjectId == application.SubjectId&&
+                    x.IsReExam,
                 cancellationToken);
 
         if (existingMark != null)
@@ -156,12 +157,10 @@ public class EnterReExamMarkCommandHandler : IRequestHandler<EnterReExamMarkComm
             EnteredByTeacherId = teacher.Id,
             EnteredOn = DateTime.UtcNow,
             UpdatedOn = DateTime.UtcNow,
-            Status = MarkStatus.Draft
+            Status = MarkStatus.Draft,
+            IsReExam = true
         };
-
-        await _context.ExamMarks.AddAsync(
-            mark,
-            cancellationToken);
+        await _context.ExamMarks.AddAsync(mark, cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -175,7 +174,9 @@ public class EnterReExamMarkCommandHandler : IRequestHandler<EnterReExamMarkComm
             MaxMarks = mark.MaxMarks,
             EnteredOn = mark.EnteredOn,
             UpdatedOn = mark.UpdatedOn,
-            Status = mark.Status
+            Status = mark.Status,
+            IsReExam = mark.IsReExam,   
+            IsPublished = mark.IsPublished
         };
 
         return new ResponseDto<MarkResponseDto>

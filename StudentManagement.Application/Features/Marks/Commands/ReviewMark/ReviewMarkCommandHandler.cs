@@ -88,7 +88,9 @@ public class ReviewMarkCommandHandler
             MaxMarks = mark.MaxMarks,
             EnteredOn = mark.EnteredOn,
             UpdatedOn = mark.UpdatedOn,
-            Status = mark.Status
+            Status = mark.Status,
+            IsReExam = mark.IsReExam,
+            IsPublished =  mark.IsPublished
         };
 
         return new ResponseDto<MarkResponseDto>

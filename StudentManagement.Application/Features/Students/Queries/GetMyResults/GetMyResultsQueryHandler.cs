@@ -65,7 +65,9 @@ public class GetMyResultsQueryHandler
                     Mark = mark,
                     Exam = exam
                 })
-            .Where(x => x.Exam.IsPublished)
+            .Where(x =>
+                (!x.Mark.IsReExam && x.Exam.IsPublished) ||
+                (x.Mark.IsReExam && x.Mark.IsPublished))
             .Join(
                 _context.Subjects,
                 x => x.Mark.SubjectId,
@@ -81,7 +83,8 @@ public class GetMyResultsQueryHandler
                     MarksObtained = x.Mark.MarksObtained,
                     MaxMarks = x.Mark.MaxMarks,
 
-                    Status = x.Mark.Status
+                    Status = x.Mark.Status,
+                    IsReExam =  x.Mark.IsReExam
                 })
             .ToListAsync(cancellationToken);
 

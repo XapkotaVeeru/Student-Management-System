@@ -15,4 +15,5 @@ public class ExamMark
     public DateTime UpdatedOn { get; set; }
     public MarkStatus Status { get; set; }
     public bool IsReExam { get; set; }
+    public bool IsPublished { get; set; }
 }
