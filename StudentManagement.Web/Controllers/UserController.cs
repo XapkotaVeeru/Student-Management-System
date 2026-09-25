@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using StudentManagement.Application.DTOs.Users;
 using StudentManagement.Application.Features.Users.Commands.ApproveUser;
 using StudentManagement.Application.Features.Users.Commands.CreateUser;
+using StudentManagement.Application.Features.Users.Commands.DeactivateUser;
 using StudentManagement.Application.Features.Users.Queries.GetUserById;
 using StudentManagement.Application.Features.Users.Queries.GetUsers;
 using StudentManagement.Application.Interfaces;
@@ -71,6 +72,19 @@ public class UserController : ControllerBase
     {
         var command = new CreateUserCommand(dto);
 
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result.Status)
+        {
+            return BadRequest(result);
+        }
+        return Ok(result);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> DeactivateUser(int id, CancellationToken cancellationToken)
+    {
+        var command = new DeactivateUserCommand(id);
         var result = await _mediator.Send(command, cancellationToken);
 
         if (!result.Status)

@@ -21,31 +21,6 @@ public class DeactivateUserCommandHandler : IRequestHandler<DeactivateUserComman
     public async Task<ResponseDto<UserResponseDto>> Handle(DeactivateUserCommand request, 
         CancellationToken cancellationToken)
     {
-        var admin = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == _currentUserService.UserId);
-
-        if (admin == null)
-        {
-            return new ResponseDto<UserResponseDto>
-            {
-                Status = false,
-                Message = "User not found",
-                Data = null
-            };
-        }
-
-        var userIsActive = await _dbContext.Users.Where(x => x.Id == request.UserId)
-            .Select(x => x.IsActive)
-            .FirstOrDefaultAsync(cancellationToken: cancellationToken);
-
-        if (!userIsActive)
-        {
-            return new ResponseDto<UserResponseDto>
-            {
-                Status = false,
-                Message = "User has been deactivated",
-                Data = null
-            };
-        }
         
         var user = await _dbContext.Users.FirstOrDefaultAsync
             (x => x.Id == request.UserId, cancellationToken: cancellationToken);
@@ -56,6 +31,16 @@ public class DeactivateUserCommandHandler : IRequestHandler<DeactivateUserComman
             {
                 Status = false,
                 Message = "User not found",
+                Data = null
+            };
+        }
+        
+        if (!user.IsActive)
+        {
+            return new ResponseDto<UserResponseDto>
+            {
+                Status = false,
+                Message = "User has been deactivated",
                 Data = null
             };
         }
