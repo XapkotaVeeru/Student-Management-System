@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StudentManagement.Application.DTOs.Users;
+using StudentManagement.Application.Features.Users.Commands.ActivateUser;
 using StudentManagement.Application.Features.Users.Commands.ApproveUser;
 using StudentManagement.Application.Features.Users.Commands.CreateUser;
 using StudentManagement.Application.Features.Users.Commands.DeactivateUser;
@@ -81,7 +82,7 @@ public class UserController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{id}/deactivate")]
     public async Task<IActionResult> DeactivateUser(int id, CancellationToken cancellationToken)
     {
         var command = new DeactivateUserCommand(id);
@@ -93,4 +94,20 @@ public class UserController : ControllerBase
         }
         return Ok(result);
     }
+    
+    [HttpPut("{id}/activate")]
+    public async Task<IActionResult> ActivateUser(int id, CancellationToken cancellationToken)
+    {
+        var command = new ActivateUserCommand(id);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result.Status)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
+    
 }
