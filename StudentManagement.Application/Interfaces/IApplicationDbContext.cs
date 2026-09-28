@@ -27,5 +27,7 @@ public interface IApplicationDbContext
     
     DbSet<ReExamApplication> ReExamApplications { get; }
     
+    DbSet<SchoolClass> SchoolClasses { get; }
+    
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

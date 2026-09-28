@@ -4,6 +4,6 @@ public class SchoolClass
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
-    public int AcademicYear { get; set; }
+    public string AcademicYear { get; set; }
     public bool IsActive { get; set; }
 }
