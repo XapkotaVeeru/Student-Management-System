@@ -1,0 +1,62 @@
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using StudentManagement.Application.DTOs.Common;
+using StudentManagement.Application.DTOs.Subjects;
+using StudentManagement.Application.Interfaces;
+
+namespace StudentManagement.Application.Features.Subjects.Commands.ActivateSubject;
+
+public class ActivateSubjectCommandHandler : IRequestHandler<ActivateSubjectCommand, ResponseDto<SubjectResponseDto>>
+{
+    private readonly IApplicationDbContext _dbContext;
+
+    public ActivateSubjectCommandHandler(IApplicationDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<ResponseDto<SubjectResponseDto>> Handle(ActivateSubjectCommand request,
+        CancellationToken cancellationToken)
+    {
+        var subject = await _dbContext.Subjects.FirstOrDefaultAsync(
+                x => x.Id == request.SubjectId, cancellationToken);
+
+        if (subject == null)
+        {
+            return new ResponseDto<SubjectResponseDto>
+            {
+                Status = false,
+                Message = "Subject not found.",
+                Data = null
+            };
+        }
+
+        if (subject.IsActive)
+        {
+            return new ResponseDto<SubjectResponseDto>
+            {
+                Status = false,
+                Message = "Subject is already active.",
+                Data = null
+            };
+        }
+
+        subject.IsActive = true;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new ResponseDto<SubjectResponseDto>
+        {
+            Status = true,
+            Message = "Subject activated successfully.",
+            Data = new SubjectResponseDto
+            {
+                Id = subject.Id,
+                Name = subject.Name,
+                Description = subject.Description,
+                SubjectCode = subject.SubjectCode,
+                IsActive = subject.IsActive
+            }
+        };
+    }
+}
