@@ -10,7 +10,7 @@ public class TeacherConfiguration : IEntityTypeConfiguration<Teacher>
     {
         teacher.HasKey(x => x.Id);
         
-        teacher.Property(x=>x.Gender).HasConversion<String>().IsRequired().HasMaxLength(50);
+        teacher.Property(x=>x.Gender).HasConversion<String>().IsRequired(false).HasMaxLength(50);
         
         teacher.Property(x=> x.FirstName).IsRequired().HasMaxLength(50);
         

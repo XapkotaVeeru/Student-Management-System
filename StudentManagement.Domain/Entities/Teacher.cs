@@ -6,7 +6,7 @@ public class Teacher
 {
     public int Id { get; set; }
     public int UserId { get; set; }
-    public Gender Gender { get; set; }
+    public Gender? Gender { get; set; }
     public string EmployeeNumber { get; set; } = string.Empty;
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;

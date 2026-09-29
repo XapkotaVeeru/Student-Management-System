@@ -35,7 +35,7 @@ public class StudentConfiguration : IEntityTypeConfiguration<Student>
                 
                 student.Property(x => x.Address).IsRequired().HasMaxLength(150);
 
-                student.Property(x => x.Gender).HasConversion<string>().IsRequired().HasMaxLength(50);
+                student.Property(x => x.Gender).HasConversion<string>().IsRequired(false).HasMaxLength(50);
                 
                 
                 student.HasOne<User>().WithOne().HasForeignKey<Student>(x => x.UserId)

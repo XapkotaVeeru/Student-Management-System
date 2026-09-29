@@ -15,19 +15,20 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Respo
     private readonly PasswordService _passwordService;
     private readonly ICurrentUserService _currentUserService;
 
-    public CreateUserCommandHandler(IApplicationDbContext context, PasswordService passwordService,
+    public CreateUserCommandHandler(IApplicationDbContext context, PasswordService passwordService, 
         ICurrentUserService currentUserService)
     {
         _context = context;
         _passwordService = passwordService;
         _currentUserService = currentUserService;
     }
-    
-    public async Task<ResponseDto<UserResponseDto>> Handle(CreateUserCommand request, CancellationToken cancellationToken)
-    {
-        var admin = await _context.Users.FirstOrDefaultAsync
-            (x => x.Id == _currentUserService.UserId, cancellationToken: cancellationToken);
 
+    public async Task<ResponseDto<UserResponseDto>> Handle(CreateUserCommand request, 
+        CancellationToken cancellationToken)
+    {
+        var admin = await _context.Users.FirstOrDefaultAsync(
+            x => x.Id == _currentUserService.UserId,
+            cancellationToken);
 
         if (admin == null)
         {
@@ -51,21 +52,8 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Respo
 
         var dto = request.User;
 
-        var usernameExists = await _context.Users.AnyAsync
-            (x => x.Username == dto.Username, cancellationToken: cancellationToken);
-
-        var emailExists = await _context.Users.AnyAsync
-            (x => x.Email == dto.Email, cancellationToken: cancellationToken);
-
-        if (emailExists)
-        {
-            return new ResponseDto<UserResponseDto>
-            {
-                Status = false,
-                Message = "Email already exists",
-                Data = null
-            };
-        }
+        var usernameExists = await _context.Users.AnyAsync(x => x.Username == dto.Username,
+            cancellationToken);
 
         if (usernameExists)
         {
@@ -77,21 +65,73 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Respo
             };
         }
 
+        var emailExists = await _context.Users.AnyAsync(x => x.Email == dto.Email, cancellationToken);
+
+        if (emailExists)
+        {
+            return new ResponseDto<UserResponseDto>
+            {
+                Status = false,
+                Message = "Email already exists",
+                Data = null
+            };
+        }
+
         var user = new User
         {
             Username = dto.Username,
             Email = dto.Email,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
             PasswordHash = _passwordService.HashPassword(dto.Password),
             IsActive = true,
-            UserRole = dto.UserRole
+            UserRole = dto.UserRole,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
-        
 
         await _context.Users.AddAsync(user, cancellationToken);
-        
         await _context.SaveChangesAsync(cancellationToken);
+
+        if (dto.UserRole == UserRole.Teacher)
+        {
+            var teacher = new Teacher
+            {
+                UserId = user.Id,
+                EmployeeNumber = $"EMP-{Guid.NewGuid().ToString()[..8].ToUpper()}",
+                FirstName = string.Empty,
+                LastName = string.Empty,
+                Gender = null,
+                Email = user.Email,
+                PhoneNumber = string.Empty,
+                IsActive = true
+            };
+
+            await _context.Teachers.AddAsync(teacher, cancellationToken);
+        }
+
+        if (dto.UserRole == UserRole.Student)
+        {
+            var student = new Student
+            {
+                UserId = user.Id,
+                StudentNumber = string.Empty,
+                Email = user.Email,
+                PhoneNumber = string.Empty,
+                FirstName = string.Empty,
+                LastName = string.Empty,
+                DateOfBirth = default,
+                Gender = null,
+                Address = string.Empty,
+                AdmissionNumber = string.Empty,
+                SchoolClassId = 0,
+                EnrollmentDate = DateTime.UtcNow,
+                IsActive = true
+            };
+
+            await _context.Students.AddAsync(student, cancellationToken);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
         return new ResponseDto<UserResponseDto>
         {
             Status = true,
@@ -107,6 +147,5 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Respo
                 UserRole = user.UserRole
             }
         };
-
     }
 }
