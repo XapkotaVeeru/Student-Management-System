@@ -4,12 +4,12 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using Student_Management_System.BackgroundServices;
 using StudentManagement.Application;
 using StudentManagement.Application.Interfaces;
 using StudentManagement.Application.Services;
 using StudentManagement.Domain.Entities;
 using StudentManagement.Domain.Enums;
+using StudentManagement.Infrastructure.BackgroundServices;
 using StudentManagement.Infrastructure.Data;
 using StudentManagement.Infrastructure.Services;
 

@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using StudentManagement.Application.Interfaces;
 
-namespace Student_Management_System.BackgroundServices;
+namespace StudentManagement.Infrastructure.BackgroundServices;
 
 public class RefreshTokenCleanupService : BackgroundService
 {

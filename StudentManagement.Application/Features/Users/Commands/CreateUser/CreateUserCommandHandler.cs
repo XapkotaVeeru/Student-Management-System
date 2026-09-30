@@ -101,7 +101,7 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Respo
                 LastName = string.Empty,
                 Gender = null,
                 Email = user.Email,
-                PhoneNumber = string.Empty,
+                PhoneNumber = null,
                 IsActive = true
             };
 
@@ -113,16 +113,16 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Respo
             var student = new Student
             {
                 UserId = user.Id,
-                StudentNumber = string.Empty,
+                StudentNumber = $"STU-{Guid.NewGuid().ToString()[..8].ToUpper()}",
                 Email = user.Email,
-                PhoneNumber = string.Empty,
+                PhoneNumber = null,
                 FirstName = string.Empty,
                 LastName = string.Empty,
-                DateOfBirth = default,
+                DateOfBirth = null,
                 Gender = null,
                 Address = string.Empty,
                 AdmissionNumber = string.Empty,
-                SchoolClassId = 0,
+                SchoolClassId = null,
                 EnrollmentDate = DateTime.UtcNow,
                 IsActive = true
             };

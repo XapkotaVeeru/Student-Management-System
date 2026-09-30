@@ -17,19 +17,19 @@ public class StudentConfiguration : IEntityTypeConfiguration<Student>
                 student.Property(x => x.FirstName).HasMaxLength(50).IsRequired();
                 
                 student.Property(x => x.LastName).HasMaxLength(50).IsRequired();
-                
-                student.Property(x => x.PhoneNumber).HasMaxLength(50).IsRequired();
+
+                student.Property(x => x.PhoneNumber).HasMaxLength(50).IsRequired(false);
                 
                 student.Property(x => x.Email).IsRequired().HasMaxLength(150);
                 student.HasIndex(x => x.Email).IsUnique();
                 
-                student.Property(x => x.DateOfBirth).IsRequired().HasColumnType("date");
+                student.Property(x => x.DateOfBirth).IsRequired(false).HasColumnType("date");
                 
                 student.Property(x => x.IsActive).HasDefaultValue(true).IsRequired();
                 
                 student.Property(x => x.EnrollmentDate).IsRequired();
                 
-                student.Property(x => x.SchoolClassId).IsRequired();
+                student.Property(x => x.SchoolClassId).IsRequired(false);
                 
                 student.Property(x => x.AdmissionNumber).IsRequired().HasMaxLength(50);
                 

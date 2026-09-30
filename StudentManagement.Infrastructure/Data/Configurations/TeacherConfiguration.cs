@@ -19,7 +19,7 @@ public class TeacherConfiguration : IEntityTypeConfiguration<Teacher>
         teacher.Property(x=> x.Email).IsRequired().HasMaxLength(150);
         teacher.HasIndex(x=>x.Email).IsUnique();
         
-        teacher.Property(x => x.PhoneNumber).IsRequired().HasMaxLength(50);
+        teacher.Property(x => x.PhoneNumber).IsRequired(false).HasMaxLength(50);
         teacher.HasIndex(x => x.PhoneNumber).IsUnique();
         
         teacher.Property(x => x.IsActive).IsRequired().HasDefaultValue(true);
