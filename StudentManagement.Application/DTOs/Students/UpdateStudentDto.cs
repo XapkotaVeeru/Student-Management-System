@@ -11,5 +11,5 @@ public class UpdateStudentDto
     public string? PhoneNumber { get; set; }
     public Gender? Gender { get; set; }
     public string Address { get; set; } = string.Empty;
-    public int SchoolClassId { get; set; }
+    public int? SchoolClassId { get; set; }
 }

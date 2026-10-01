@@ -1,5 +1,6 @@
 using StudentManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using StudentManagement.Domain.Enums;
 
 namespace StudentManagement.Application.Interfaces;
 

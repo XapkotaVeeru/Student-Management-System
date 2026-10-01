@@ -4,4 +4,14 @@ using StudentManagement.Application.DTOs.Students;
 
 namespace StudentManagement.Application.Features.Students.Commands.UpdateStudent;
 
-public record UpdateStudentCommand(int StudentId, UpdateStudentDto Student ) : IRequest<ResponseDto<bool>>;
+public class UpdateStudentCommand : IRequest<ResponseDto<bool>>
+{
+    public int StudentId { get; }
+    public UpdateStudentDto Student { get; }
+
+    public UpdateStudentCommand(int studentId, UpdateStudentDto student)
+    {
+        StudentId = studentId;
+        Student = student;
+    }
+}
