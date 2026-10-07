@@ -32,8 +32,9 @@ public class UpdateStudentCommandHandler
                 Data = false
             };
         }
-
-        if (_currentUserService.UserRole != UserRole.Admin && _currentUserService.UserRole != UserRole.Student)
+        
+        if (_currentUserService.UserRole != UserRole.Admin &&
+            _currentUserService.UserRole != UserRole.Student)
         {
             return new ResponseDto<bool>
             {
@@ -42,8 +43,9 @@ public class UpdateStudentCommandHandler
                 Data = false
             };
         }
-
-        if (_currentUserService.UserRole == UserRole.Student && student.UserId != _currentUserService.UserId)
+        
+        if (_currentUserService.UserRole == UserRole.Student &&
+            student.UserId != _currentUserService.UserId)
         {
             return new ResponseDto<bool>
             {
@@ -52,64 +54,9 @@ public class UpdateStudentCommandHandler
                 Data = false
             };
         }
-
-        var emailExists = await _context.Students.AnyAsync(
-            x => x.Email == request.Student.Email &&
-                     x.Id != student.Id, cancellationToken);
-
-        if (emailExists)
-        {
-            return new ResponseDto<bool>
-            {
-                Status = false,
-                Message = "Email already exists",
-                Data = false
-            };
-        }
         
-        student.FirstName = request.Student.FirstName;
-        student.LastName = request.Student.LastName;
-        student.Email = request.Student.Email;
-        student.DateOfBirth = request.Student.DateOfBirth;
-        student.PhoneNumber = request.Student.PhoneNumber;
-        student.Gender = request.Student.Gender;
-        student.Address = request.Student.Address;
-        
-        if (_currentUserService.UserRole == UserRole.Admin)
-        {
-            if (request.Student.SchoolClassId == null)
-            {
-                return new ResponseDto<bool>
-                {
-                    Status = false,
-                    Message = "School class is required for admin update",
-                    Data = false
-                };
-            }
-
-            var schoolClassExists = await _context.SchoolClasses
-                .AnyAsync(
-                    x => x.Id == request.Student.SchoolClassId &&
-                         x.IsActive,
-                    cancellationToken);
-
-            if (!schoolClassExists)
-            {
-                return new ResponseDto<bool>
-                {
-                    Status = false,
-                    Message = "School class not found or inactive",
-                    Data = false
-                };
-            }
-
-            student.SchoolClassId = request.Student.SchoolClassId;
-        }
-        
-        var user = await _context.Users
-            .FirstOrDefaultAsync(
-                x => x.Id == student.UserId,
-                cancellationToken);
+        var user = await _context.Users.FirstOrDefaultAsync(
+                x => x.Id == student.UserId, cancellationToken);
 
         if (user == null)
         {
@@ -121,9 +68,99 @@ public class UpdateStudentCommandHandler
             };
         }
 
-        user.Email = request.Student.Email;
-        user.UpdatedAt = DateTime.UtcNow;
+        if (request.Student.FirstName != null)
+        {
+            student.FirstName = request.Student.FirstName;
+        }
 
+        if (request.Student.LastName != null)
+        {
+            student.LastName = request.Student.LastName;
+        }
+
+        if (request.Student.DateOfBirth.HasValue)
+        {
+            student.DateOfBirth = request.Student.DateOfBirth;
+        }
+
+        if (request.Student.PhoneNumber != null)
+        {
+            student.PhoneNumber = request.Student.PhoneNumber;
+        }
+
+        if (request.Student.Gender.HasValue)
+        {
+            student.Gender = request.Student.Gender;
+        }
+
+        if (request.Student.Address != null)
+        {
+            student.Address = request.Student.Address;
+        }
+
+        if (request.Student.Email != null)
+        { 
+            var studentEmailExists = await _context.Students.AnyAsync(x => x.Email
+                    == request.Student.Email && x.Id != student.Id, cancellationToken);
+
+            if (studentEmailExists)
+            {
+                return new ResponseDto<bool>
+                {
+                    Status = false,
+                    Message = "Email already exists",
+                    Data = false
+                };
+            }
+
+            var userEmailExists = await _context.Users.AnyAsync(
+                    x => x.Email == request.Student.Email && x.Id != user.Id, cancellationToken);
+
+            if (userEmailExists)
+            {
+                return new ResponseDto<bool>
+                {
+                    Status = false,
+                    Message = "Email already exists",
+                    Data = false
+                };
+            }
+
+            student.Email = request.Student.Email;
+            user.Email = request.Student.Email;
+        }
+
+        if (_currentUserService.UserRole == UserRole.Admin)
+        {
+            if (request.Student.SchoolClassId.HasValue)
+            {
+                var schoolClassExists = await _context.SchoolClasses.AnyAsync(
+                        x => x.Id == request.Student.SchoolClassId.Value && x.IsActive,
+                        cancellationToken);
+
+                if (!schoolClassExists)
+                {
+                    return new ResponseDto<bool>
+                    {
+                        Status = false,
+                        Message = "School class not found or inactive",
+                        Data = false
+                    };
+                }
+
+                student.SchoolClassId =
+                    request.Student.SchoolClassId.Value;
+            }
+            
+            if (request.Student.AdmissionNumber != null)
+            {
+                student.AdmissionNumber =
+                    request.Student.AdmissionNumber;
+            }
+        }
+        
+        user.UpdatedAt = DateTime.UtcNow;
+        
         await _context.SaveChangesAsync(cancellationToken);
 
         return new ResponseDto<bool>
