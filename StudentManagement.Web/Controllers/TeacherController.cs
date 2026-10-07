@@ -7,6 +7,9 @@ using StudentManagement.Application.Features.Marks.Commands.EnterMark;
 using StudentManagement.Application.Features.Marks.Commands.SubmitMark;
 using StudentManagement.Application.Features.ReExams.Commands.EnterReExamMark;
 using StudentManagement.Application.Features.Teachers.Commands.UpdateTeacher;
+using StudentManagement.Application.Features.Teachers.Queries.GetMyClasses;
+using StudentManagement.Application.Features.Teachers.Queries.GetMyProfile;
+using StudentManagement.Application.Features.Teachers.Queries.GetMySubjects;
 
 namespace StudentManagement.Web.Controllers;
 
@@ -92,21 +95,55 @@ public class TeacherController : ControllerBase
     
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin,Teacher")]
-    public async Task<IActionResult> UpdateTeacher(
-        int id,
-        UpdateTeacherDto dto,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateTeacher(int id, UpdateTeacherDto dto, CancellationToken cancellationToken)
     {
         var command = new UpdateTeacherCommand(id, dto);
 
-        var result = await _mediator.Send(
-            command,
-            cancellationToken);
+        var result = await _mediator.Send(command, cancellationToken);
 
         if (!result.Status)
         {
             return BadRequest(result);
         }
+
+        return Ok(result);
+    }
+    
+    [HttpGet("me")]
+    [Authorize(Roles = "Teacher")]
+    public async Task<IActionResult> GetMyProfile(CancellationToken cancellationToken)
+    {
+        var query = new GetMyTeacherProfileQuery();
+
+        var result = await _mediator.Send(query, cancellationToken);
+
+        if (!result.Status)
+        {
+            return NotFound(result);
+        }
+
+        return Ok(result);
+    }
+    
+    
+    [HttpGet("subjects")]
+    [Authorize(Roles = "Teacher")]
+    public async Task<IActionResult> GetMySubjects(CancellationToken cancellationToken)
+    {
+        var query = new GetMySubjectsQuery();
+
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
+    }
+    
+    [HttpGet("classes")]
+    [Authorize(Roles = "Teacher")]
+    public async Task<IActionResult> GetMyClasses(CancellationToken cancellationToken)
+    {
+        var query = new GetMyClassesQuery();
+
+        var result = await _mediator.Send(query, cancellationToken);
 
         return Ok(result);
     }
