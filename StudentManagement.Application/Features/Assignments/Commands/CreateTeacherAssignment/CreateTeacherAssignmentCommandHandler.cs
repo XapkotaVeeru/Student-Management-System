@@ -91,6 +91,7 @@ public class CreateTeacherAssignmentCommandHandler : IRequestHandler<CreateTeach
         {
             Data = new TeacherAssignmentResponseDto
             {
+                Id = assignment.Id,
                 SubjectId = assignment.SubjectId,
                 TeacherId = assignment.TeacherId,
                 SchoolClassId = assignment.SchoolClassId
