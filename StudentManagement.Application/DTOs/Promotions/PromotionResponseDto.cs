@@ -11,5 +11,5 @@ public class PromotionResponseDto
     public int AcademicYear { get; set; }
     public DateTime PromotionDate { get; set; }
     public PromotionStatus Status { get; set; }
-    public int ApprovedByUserId { get; set; }
+    public int? ApprovedByUserId { get; set; }
 }

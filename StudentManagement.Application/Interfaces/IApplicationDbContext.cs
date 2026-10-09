@@ -30,5 +30,7 @@ public interface IApplicationDbContext
     
     DbSet<SchoolClass> SchoolClasses { get; }
     
+    DbSet<StudentPromotion> StudentPromotions { get; }
+    
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
