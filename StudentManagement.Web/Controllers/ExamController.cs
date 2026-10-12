@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StudentManagement.Application.DTOs.Exams;
 using StudentManagement.Application.Features.Exams.Commands.CreateExam;
+using StudentManagement.Application.Features.Exams.Commands.UpdateExam;
 using StudentManagement.Application.Features.Exams.Queries.GetExams;
 
 namespace StudentManagement.Web.Controllers;
@@ -43,6 +44,20 @@ public class ExamController : ControllerBase
         var query = new GetExamsQuery();
 
         var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
+    }
+    
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateExam(int id, UpdateExamDto dto, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new UpdateExamCommand(id, dto), cancellationToken);
+
+        if (!result.Status)
+        {
+            return BadRequest(result);
+        }
 
         return Ok(result);
     }

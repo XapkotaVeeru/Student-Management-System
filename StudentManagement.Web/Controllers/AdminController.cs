@@ -8,6 +8,7 @@ using StudentManagement.Application.Features.Marks.Commands.ReviewMark;
 using StudentManagement.Application.Features.Marks.Queries.GetMarks;
 using StudentManagement.Application.Features.ReExams.Commands.PublishReExam;
 using StudentManagement.Application.Features.ReExams.Commands.ReviewReExam;
+using StudentManagement.Application.Features.ReExams.Queries.GetReExamApplications;
 using StudentManagement.Domain.Enums;
 
 namespace Student_Management_System.Controllers;
@@ -96,6 +97,19 @@ public class AdminController : ControllerBase
     {
         var result = await _mediator.Send(
             new GetMarksQuery(status, examId, isReExam),
+            cancellationToken);
+
+        return Ok(result);
+    }
+    
+    [HttpGet("re-exams")]
+    public async Task<IActionResult> GetReExamApplications(
+        [FromQuery] ReExamStatus? status,
+        [FromQuery] int? examId,
+        [FromQuery] int? studentId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetReExamApplicationsQuery(status, examId, studentId),
             cancellationToken);
 
         return Ok(result);

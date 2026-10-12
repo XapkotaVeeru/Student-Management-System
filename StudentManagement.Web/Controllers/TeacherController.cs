@@ -12,6 +12,7 @@ using StudentManagement.Application.Features.Teachers.Commands.UpdateTeacher;
 using StudentManagement.Application.Features.Teachers.Queries.GetMyClasses;
 using StudentManagement.Application.Features.Teachers.Queries.GetMyProfile;
 using StudentManagement.Application.Features.Teachers.Queries.GetMySubjects;
+using StudentManagement.Application.Features.Teachers.Queries.GetTeachers;
 
 namespace Student_Management_System.Controllers;
 
@@ -174,6 +175,19 @@ public class TeacherController : ControllerBase
         {
             return BadRequest(result);
         }
+
+        return Ok(result);
+    }
+    
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetTeachers(
+        [FromQuery] bool? isActive,
+        [FromQuery] string? search,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetTeachersQuery(isActive, search),
+            cancellationToken);
 
         return Ok(result);
     }
