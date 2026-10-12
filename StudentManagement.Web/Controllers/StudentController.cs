@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using StudentManagement.Application.DTOs.ReExam;
 using StudentManagement.Application.DTOs.Students;
 using StudentManagement.Application.Features.ReExams.Commands.ApplyReExam;
+using StudentManagement.Application.Features.Students.Commands.ActivateStudent;
+using StudentManagement.Application.Features.Students.Commands.DeactivateStudent;
 using StudentManagement.Application.Features.Students.Commands.UpdateStudent;
 using StudentManagement.Application.Features.Students.Queries.GetMyProfile;
 using StudentManagement.Application.Features.Students.Queries.GetMyResults;
@@ -101,6 +103,34 @@ public class StudentController : ControllerBase
         {
             return BadRequest(result);
         }
+        return Ok(result);
+    }
+    
+    [HttpPut("{id}/deactivate")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeactivateStudent(int id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new DeactivateStudentCommand(id), cancellationToken);
+
+        if (!result.Status)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
+
+    [HttpPut("{id}/activate")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ActivateStudent(int id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new ActivateStudentCommand(id), cancellationToken);
+
+        if (!result.Status)
+        {
+            return BadRequest(result);
+        }
+
         return Ok(result);
     }
 }
