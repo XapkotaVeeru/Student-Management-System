@@ -6,12 +6,14 @@ using StudentManagement.Application.DTOs.Teachers;
 using StudentManagement.Application.Features.Marks.Commands.EnterMark;
 using StudentManagement.Application.Features.Marks.Commands.SubmitMark;
 using StudentManagement.Application.Features.ReExams.Commands.EnterReExamMark;
+using StudentManagement.Application.Features.Teachers.Commands.ActivateTeacher;
+using StudentManagement.Application.Features.Teachers.Commands.DeactivateTeacher;
 using StudentManagement.Application.Features.Teachers.Commands.UpdateTeacher;
 using StudentManagement.Application.Features.Teachers.Queries.GetMyClasses;
 using StudentManagement.Application.Features.Teachers.Queries.GetMyProfile;
 using StudentManagement.Application.Features.Teachers.Queries.GetMySubjects;
 
-namespace StudentManagement.Web.Controllers;
+namespace Student_Management_System.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -144,6 +146,34 @@ public class TeacherController : ControllerBase
         var query = new GetMyClassesQuery();
 
         var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
+    }
+    
+    [HttpPut("{id}/deactivate")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeactivateTeacher(int id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new DeactivateTeacherCommand(id), cancellationToken);
+
+        if (!result.Status)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
+
+    [HttpPut("{id}/activate")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ActivateTeacher(int id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new ActivateTeacherCommand(id), cancellationToken);
+
+        if (!result.Status)
+        {
+            return BadRequest(result);
+        }
 
         return Ok(result);
     }

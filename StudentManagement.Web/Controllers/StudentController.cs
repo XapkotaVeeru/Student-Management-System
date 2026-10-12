@@ -10,6 +10,7 @@ using StudentManagement.Application.Features.Students.Commands.UpdateStudent;
 using StudentManagement.Application.Features.Students.Queries.GetMyProfile;
 using StudentManagement.Application.Features.Students.Queries.GetMyResults;
 using StudentManagement.Application.Features.Students.Queries.GetMySubjects;
+using StudentManagement.Application.Features.Students.Queries.GetStudents;
 
 namespace Student_Management_System.Controllers;
 
@@ -130,6 +131,21 @@ public class StudentController : ControllerBase
         {
             return BadRequest(result);
         }
+
+        return Ok(result);
+    }
+    
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetStudents(
+        [FromQuery] int? schoolClassId,
+        [FromQuery] bool? isActive,
+        [FromQuery] string? search,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new GetStudentsQuery(schoolClassId, isActive, search),
+            cancellationToken);
 
         return Ok(result);
     }
