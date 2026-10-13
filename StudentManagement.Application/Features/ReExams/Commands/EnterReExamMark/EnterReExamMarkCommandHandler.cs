@@ -46,6 +46,16 @@ public class EnterReExamMarkCommandHandler : IRequestHandler<EnterReExamMarkComm
                 Data = null
             };
         }
+        
+        if (!teacher.IsActive)
+        {
+            return new ResponseDto<MarkResponseDto>
+            {
+                Status = false,
+                Message = "Teacher is not active",
+                Data = null
+            };
+        }
 
         var application = await _context.ReExamApplications.FirstOrDefaultAsync(
                 x => x.Id == request.ReExamApplicationId, cancellationToken);
