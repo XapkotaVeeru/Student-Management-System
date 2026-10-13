@@ -10,9 +10,7 @@ public class AccessLogMiddleware
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<AccessLogMiddleware> _logger;
 
-    public AccessLogMiddleware(
-        RequestDelegate next,
-        IServiceScopeFactory scopeFactory,
+    public AccessLogMiddleware(RequestDelegate next, IServiceScopeFactory scopeFactory,
         ILogger<AccessLogMiddleware> logger)
     {
         _next = next;

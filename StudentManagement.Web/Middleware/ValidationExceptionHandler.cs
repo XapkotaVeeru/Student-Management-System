@@ -6,9 +6,7 @@ namespace Student_Management_System.Middleware;
 
 public class ValidationExceptionHandler : IExceptionHandler
 {
-    public async ValueTask<bool> TryHandleAsync(
-        HttpContext httpContext,
-        Exception exception,
+    public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception,
         CancellationToken cancellationToken)
     {
         if (exception is not ValidationException validationException)
@@ -20,7 +18,12 @@ public class ValidationExceptionHandler : IExceptionHandler
         httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
 
         await httpContext.Response.WriteAsJsonAsync(
-            new ResponseDto<object> { Status = false, Message = message, Data = null },
+            new ResponseDto<object>
+            {
+                Status = false, 
+                Message = message, 
+                Data = null
+            },
             cancellationToken);
 
         return true;
