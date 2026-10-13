@@ -33,4 +33,6 @@ public interface IApplicationDbContext
     DbSet<StudentPromotion> StudentPromotions { get; }
     
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
+    
+    public DbSet<AccessLog> AccessLogs { get; set; }
 }

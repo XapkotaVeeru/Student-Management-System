@@ -1,9 +1,11 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Student_Management_System.Middleware;
 using StudentManagement.Application;
 using StudentManagement.Application.Interfaces;
 using StudentManagement.Application.Services;
@@ -32,9 +34,19 @@ builder.Services.AddControllers()
 
 builder.Services.AddHttpContextAccessor();
 
+builder.Services.AddValidatorsFromAssembly(
+    typeof(StudentManagement.Application.AssemblyMarker).Assembly);
+
 builder.Services.AddMediatR(cfg =>
+{
     cfg.RegisterServicesFromAssembly(
-        typeof(StudentManagement.Application.AssemblyMarker).Assembly));
+        typeof(StudentManagement.Application.AssemblyMarker).Assembly);
+
+    cfg.AddOpenBehavior(typeof(StudentManagement.Application.Behaviors.ValidationBehavior<,>));
+});
+
+builder.Services.AddExceptionHandler<Student_Management_System.Middleware.ValidationExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 builder.Services.AddSwaggerGen(options =>
 {
@@ -171,6 +183,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<AccessLogMiddleware>();
+
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
