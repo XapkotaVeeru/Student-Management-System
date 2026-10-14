@@ -109,6 +109,10 @@ builder.Services
         };
     });
 
+builder.Services.AddHostedService<RefreshTokenCleanupService>();
+
+builder.Services.AddHostedService<AccessLogCleanupService>();      
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
