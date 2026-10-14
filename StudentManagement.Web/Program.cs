@@ -91,8 +91,6 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 
-builder.Services.AddHostedService<RefreshTokenCleanupService>();
-
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 builder.Services.AddScoped<PasswordService>();
@@ -138,17 +136,28 @@ using (var scope = app.Services.CreateScope())
 
     var passwordService = scope.ServiceProvider
         .GetRequiredService<PasswordService>();
-    
+
+    await dbContext.Database.MigrateAsync();
+
     var adminExists = await dbContext.Users
         .AnyAsync(x => x.UserRole == UserRole.Admin);
 
     if (!adminExists)
     {
+        var adminPassword = builder.Configuration["Seed:AdminPassword"];
+
+        if (string.IsNullOrWhiteSpace(adminPassword))
+        {
+            throw new InvalidOperationException(
+                "No admin exists and Seed:AdminPassword is not set. " +
+                "Set it with user-secrets (development) or the Seed__AdminPassword environment variable.");
+        }
+
         var admin = new User
         {
-            Username = "admin",
-            Email = "admin@school.com",
-            PasswordHash = passwordService.HashPassword("Admin@123"),
+            Username = builder.Configuration["Seed:AdminUsername"] ?? "admin",
+            Email = builder.Configuration["Seed:AdminEmail"] ?? "admin@school.com",
+            PasswordHash = passwordService.HashPassword(adminPassword),
             UserRole = UserRole.Admin,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
@@ -160,47 +169,50 @@ using (var scope = app.Services.CreateScope())
         await dbContext.SaveChangesAsync();
     }
 
-    var teacherUser = await dbContext.Users
-        .FirstOrDefaultAsync(x => x.Username == "teacher01");
-
-    if (teacherUser == null)
+    if (app.Environment.IsDevelopment())
     {
-        teacherUser = new User
+        var teacherUser = await dbContext.Users
+            .FirstOrDefaultAsync(x => x.Username == "teacher01");
+
+        if (teacherUser == null)
         {
-            Username = "teacher01",
-            Email = "teacher01@school.com",
-            PasswordHash = passwordService.HashPassword("Teacher@123"),
-            UserRole = UserRole.Teacher,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+            teacherUser = new User
+            {
+                Username = "teacher01",
+                Email = "teacher01@school.com",
+                PasswordHash = passwordService.HashPassword("Teacher@123"),
+                UserRole = UserRole.Teacher,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
 
-        dbContext.Users.Add(teacherUser);
+            dbContext.Users.Add(teacherUser);
 
-        await dbContext.SaveChangesAsync();
-    }
-    
-    var teacher = await dbContext.Teachers
-        .FirstOrDefaultAsync(x => x.UserId == teacherUser.Id);
+            await dbContext.SaveChangesAsync();
+        }
 
-    if (teacher == null)
-    {
-        teacher = new Teacher
+        var teacher = await dbContext.Teachers
+            .FirstOrDefaultAsync(x => x.UserId == teacherUser.Id);
+
+        if (teacher == null)
         {
-            UserId = teacherUser.Id,
-            EmployeeNumber = "EMP-00001",
-            FirstName = "John",
-            LastName = "Teacher",
-            Email = "teacher01@school.com",
-            PhoneNumber = "9800000000",
-            Gender = Gender.Male,
-            IsActive = true
-        };
+            teacher = new Teacher
+            {
+                UserId = teacherUser.Id,
+                EmployeeNumber = "EMP-00001",
+                FirstName = "John",
+                LastName = "Teacher",
+                Email = "teacher01@school.com",
+                PhoneNumber = "9800000000",
+                Gender = Gender.Male,
+                IsActive = true
+            };
 
-        dbContext.Teachers.Add(teacher);
+            dbContext.Teachers.Add(teacher);
 
-        await dbContext.SaveChangesAsync();
+            await dbContext.SaveChangesAsync();
+        }
     }
 }
 
