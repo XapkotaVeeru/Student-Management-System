@@ -45,6 +45,16 @@ public class SubmitMarkCommandHandler
                 Data = null
             };
         }
+        
+        if (!teacher.IsActive)
+        {
+            return new ResponseDto<MarkResponseDto>
+            {
+                Status = false,
+                Message = "Teacher is not active",
+                Data = null
+            };
+        }
 
         var mark = await _context.ExamMarks.FirstOrDefaultAsync(
                 x => x.Id == request.MarkId,

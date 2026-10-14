@@ -47,6 +47,16 @@ public class ApplyReExamCommandHandler
                 Data = null
             };
         }
+        
+        if (!student.IsActive)
+        {
+            return new ResponseDto<ReExamResponseDto>
+            {
+                Status = false,
+                Message = "Student is not active",
+                Data = null
+            };
+        }
 
         var exam = await _context.Exams.FirstOrDefaultAsync(x => x.Id == request.Request.ExamId,
             cancellationToken);

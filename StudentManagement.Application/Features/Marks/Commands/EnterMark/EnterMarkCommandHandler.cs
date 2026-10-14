@@ -49,6 +49,16 @@ public class EnterMarkCommandHandler
             };
         }
         
+        if (!teacher.IsActive)
+        {
+            return new ResponseDto<MarkResponseDto>
+            {
+                Status = false,
+                Message = "Teacher is not active",
+                Data = null
+            };
+        }
+        
         var exam = await _context.Exams
             .FirstOrDefaultAsync(
                 x => x.Id == request.ExamId,
@@ -85,6 +95,16 @@ public class EnterMarkCommandHandler
             {
                 Status = false,
                 Message = "Student not found",
+                Data = null
+            };
+        }
+        
+        if (!student.IsActive)
+        {
+            return new ResponseDto<MarkResponseDto>
+            {
+                Status = false,
+                Message = "Student is not active",
                 Data = null
             };
         }

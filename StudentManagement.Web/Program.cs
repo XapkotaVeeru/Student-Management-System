@@ -5,6 +5,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Serilog;
 using Student_Management_System.Middleware;
 using StudentManagement.Application;
 using StudentManagement.Application.Interfaces;
@@ -16,6 +17,11 @@ using StudentManagement.Infrastructure.Data;
 using StudentManagement.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, configuration) =>
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext());
 
 builder.Services.AddDbContext<StudentManagementDbContext>(options =>
     options.UseNpgsql(
@@ -185,6 +191,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<AccessLogMiddleware>();
+
+app.UseSerilogRequestLogging();
 
 app.UseExceptionHandler();
 

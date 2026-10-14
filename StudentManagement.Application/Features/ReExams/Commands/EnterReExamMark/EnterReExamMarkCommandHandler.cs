@@ -140,6 +140,19 @@ public class EnterReExamMarkCommandHandler : IRequestHandler<EnterReExamMarkComm
             };
         }
         
+        var student = await _context.Students.FirstOrDefaultAsync(
+            x => x.Id == application.StudentId, cancellationToken);
+
+        if (student == null || !student.IsActive)
+        {
+            return new ResponseDto<MarkResponseDto>
+            {
+                Status = false,
+                Message = "Student not found or not active",
+                Data = null
+            };
+        }
+        
         var existingMark = await _context.ExamMarks.FirstOrDefaultAsync(
                 x =>
                     x.ExamId == application.ExamId &&
