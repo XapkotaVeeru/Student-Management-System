@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json.Serialization;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.HttpOverrides;
+using Serilog.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -125,7 +127,30 @@ builder.Services
 
 builder.Services.AddHostedService<RefreshTokenCleanupService>();
 
-builder.Services.AddHostedService<AccessLogCleanupService>();      
+builder.Services.AddHostedService<AccessLogCleanupService>();  
+
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? [];
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -169,71 +194,43 @@ using (var scope = app.Services.CreateScope())
         await dbContext.SaveChangesAsync();
     }
 
+    app.UseForwardedHeaders();
+
     if (app.Environment.IsDevelopment())
     {
-        var teacherUser = await dbContext.Users
-            .FirstOrDefaultAsync(x => x.Username == "teacher01");
-
-        if (teacherUser == null)
-        {
-            teacherUser = new User
-            {
-                Username = "teacher01",
-                Email = "teacher01@school.com",
-                PasswordHash = passwordService.HashPassword("Teacher@123"),
-                UserRole = UserRole.Teacher,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            dbContext.Users.Add(teacherUser);
-
-            await dbContext.SaveChangesAsync();
-        }
-
-        var teacher = await dbContext.Teachers
-            .FirstOrDefaultAsync(x => x.UserId == teacherUser.Id);
-
-        if (teacher == null)
-        {
-            teacher = new Teacher
-            {
-                UserId = teacherUser.Id,
-                EmployeeNumber = "EMP-00001",
-                FirstName = "John",
-                LastName = "Teacher",
-                Email = "teacher01@school.com",
-                PhoneNumber = "9800000000",
-                Gender = Gender.Male,
-                IsActive = true
-            };
-
-            dbContext.Teachers.Add(teacher);
-
-            await dbContext.SaveChangesAsync();
-        }
+        app.UseSwagger();
+        app.UseSwaggerUI();
     }
+
+    app.UseMiddleware<AccessLogMiddleware>();
+
+    app.UseSerilogRequestLogging(options =>
+    {
+        options.GetLevel = (httpContext, elapsed, ex) =>
+            httpContext.Request.Path.StartsWithSegments("/health")
+                ? LogEventLevel.Verbose
+                : ex != null || httpContext.Response.StatusCode >= 500
+                    ? LogEventLevel.Error
+                    : LogEventLevel.Information;
+    });
+
+    app.UseExceptionHandler();
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseHttpsRedirection();
+    }
+
+    app.UseCors("Frontend");
+
+    app.UseAuthentication();
+
+    app.UseAuthorization();
+
+    app.MapControllers();
+
+    app.MapHealthChecks("/health");
+
+    app.Run();
 }
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseMiddleware<AccessLogMiddleware>();
-
-app.UseSerilogRequestLogging();
-
-app.UseExceptionHandler();
-
-app.UseHttpsRedirection();
-
-app.UseAuthentication();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
+    
