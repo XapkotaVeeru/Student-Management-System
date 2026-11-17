@@ -69,8 +69,8 @@ public class UpdateExamCommandHandler
                 Id = exam.Id,
                 Name = exam.Name,
                 ExamType = exam.ExamType,
-                StartDate = exam.StartDate,
-                EndDate = exam.EndDate,
+                StartDate = exam.StartDate.ToUniversalTime(),
+                EndDate = exam.EndDate.ToUniversalTime(),
                 SchoolClassId = exam.SchoolClassId,
                 IsActive = exam.IsActive,
                 IsPublished = exam.IsPublished
