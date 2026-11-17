@@ -36,8 +36,8 @@ public class CreateExamCommandHandler : IRequestHandler<CreateExamCommand, Respo
         {
             Name = dto.Name,
             ExamType = dto.ExamType,
-            StartDate = dto.StartDate,
-            EndDate = dto.EndDate,
+            StartDate = dto.StartDate.ToUniversalTime(),
+            EndDate = dto.EndDate.ToUniversalTime(),
             SchoolClassId = dto.SchoolClassId,
             IsActive = true,
             IsPublished = false

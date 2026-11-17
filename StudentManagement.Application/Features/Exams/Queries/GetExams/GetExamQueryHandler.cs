@@ -51,7 +51,6 @@ public class GetExamsQueryHandler : IRequestHandler<GetExamsQuery, List<ExamResp
 
             examsQuery = examsQuery
                 .Where(x =>
-                    x.IsPublished &&
                     teacherClassIds.Contains(x.SchoolClassId));
         }
         else if (userRole == UserRole.Student)
