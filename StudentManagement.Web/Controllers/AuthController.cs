@@ -71,7 +71,7 @@ public class AuthController : ControllerBase
 
         if (!result.Status)
         {
-            BadRequest(result);
+            return BadRequest(result);
         }
         return Ok(result);
     }
