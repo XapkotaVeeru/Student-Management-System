@@ -633,3 +633,7 @@ Content-Type: application/json
 {
   "refreshToken": "not-a-real-token"
 }
+
+###
+PUT {{host}}/api/user/{{student3UserId}}/deactivate
+Authorization: Bearer {{adminToken}}

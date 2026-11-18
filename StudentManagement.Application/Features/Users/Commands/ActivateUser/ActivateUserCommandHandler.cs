@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using StudentManagement.Application.DTOs.Common;
 using StudentManagement.Application.DTOs.Users;
 using StudentManagement.Application.Interfaces;
+using StudentManagement.Domain.Enums;
 
 namespace StudentManagement.Application.Features.Users.Commands.ActivateUser;
 
@@ -28,6 +29,36 @@ public class ActivateUserCommandHandler : IRequestHandler<ActivateUserCommand, R
                 Message = "User not found",
                 Data = null
             };
+        }
+        
+        if (user.UserRole == UserRole.Student)
+        {
+            var student = await _context.Students.FirstOrDefaultAsync
+                (x => x.UserId == user.Id, cancellationToken);
+            if (student == null)
+            {
+                return new ResponseDto<UserResponseDto>
+                {
+                    Status = false, 
+                    Message = "This student has not been approved yet. Use the approve endpoint",
+                    Data = null
+                };
+            }
+            student.IsActive = true;
+        }
+        else if (user.UserRole == UserRole.Teacher)
+        {
+            var teacher = await _context.Teachers.FirstOrDefaultAsync(x => x.UserId == user.Id, cancellationToken);
+            if (teacher == null)
+            {
+                return new ResponseDto<UserResponseDto>
+                    { 
+                        Status = false, 
+                        Message = "Teacher profile not found for this user", 
+                        Data = null 
+                    };
+            }
+            teacher.IsActive = true;
         }
 
         if (user.IsActive)
