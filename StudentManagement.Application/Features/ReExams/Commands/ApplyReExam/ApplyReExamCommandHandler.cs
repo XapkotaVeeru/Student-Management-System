@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using StudentManagement.Application.DTOs.Common;
 using StudentManagement.Application.DTOs.ReExam;
+using StudentManagement.Application.Features.Common;
 using StudentManagement.Application.Interfaces;
 using StudentManagement.Domain.Entities;
 using StudentManagement.Domain.Enums;
@@ -70,6 +71,16 @@ public class ApplyReExamCommandHandler
                 Data = null
             };
         }
+        
+        if (!exam.IsPublished)
+        {
+            return new ResponseDto<ReExamResponseDto>
+            {
+                Status = false,
+                Message = "Re-exam can only be requested after the exam results are published",
+                Data = null
+            };
+        }
 
         var subject = await _context.Subjects.FirstOrDefaultAsync(x => x.Id == request.Request.SubjectId,
             cancellationToken);
@@ -98,24 +109,20 @@ public class ApplyReExamCommandHandler
             x =>
                 x.ExamId == request.Request.ExamId &&
                 x.StudentId == student.Id &&
-                x.SubjectId == request.Request.SubjectId,
+                x.SubjectId == request.Request.SubjectId &&
+                !x.IsReExam,
             cancellationToken);
         
-        if (mark != null)
+        if (mark != null && GradingRules.HasPassed(mark.MarksObtained, mark.MaxMarks))
         {
-            var percentage = (mark.MarksObtained / mark.MaxMarks) * 100;
-
-            if (percentage >= 40)
+            return new ResponseDto<ReExamResponseDto>
             {
-                return new ResponseDto<ReExamResponseDto>
-                {
-                    Status = false,
-                    Message = "Students who passed cannot apply for a re-exam",
-                    Data = null
-                };
-            }
+                Status = false,
+                Message = "Students who passed cannot apply for a re-exam",
+                Data = null
+            };
         }
-
+        
         var existingApplication = await _context.ReExamApplications.FirstOrDefaultAsync(x =>
                     x.ExamId == request.Request.ExamId &&
                     x.StudentId == student.Id &&

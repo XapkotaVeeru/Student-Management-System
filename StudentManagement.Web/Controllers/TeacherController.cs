@@ -5,6 +5,7 @@ using StudentManagement.Application.DTOs.Marks;
 using StudentManagement.Application.DTOs.Teachers;
 using StudentManagement.Application.Features.Marks.Commands.EnterMark;
 using StudentManagement.Application.Features.Marks.Commands.SubmitMark;
+using StudentManagement.Application.Features.Marks.Commands.UpdateMark;
 using StudentManagement.Application.Features.ReExams.Commands.EnterReExamMark;
 using StudentManagement.Application.Features.Teachers.Commands.ActivateTeacher;
 using StudentManagement.Application.Features.Teachers.Commands.DeactivateTeacher;
@@ -189,6 +190,19 @@ public class TeacherController : ControllerBase
         var result = await _mediator.Send(new GetTeachersQuery(isActive, search),
             cancellationToken);
 
+        return Ok(result);
+    }
+    
+    [HttpPut("marks/{markId}")]
+    [Authorize(Roles = "Teacher")]
+    public async Task<IActionResult> UpdateMark(int markId, UpdateMarkDto dto, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new UpdateMarkCommand(markId, dto), 
+            cancellationToken);
+        if (!result.Status)
+        {
+            return BadRequest(result);
+        }
         return Ok(result);
     }
 }
