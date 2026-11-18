@@ -21,6 +21,13 @@ public class DeactivateUserCommandHandler : IRequestHandler<DeactivateUserComman
     public async Task<ResponseDto<UserResponseDto>> Handle(DeactivateUserCommand request, 
         CancellationToken cancellationToken)
     {
+        if (request.UserId == _currentUserService.UserId)
+            return new ResponseDto<UserResponseDto>
+            {
+                Status = false, 
+                Message = "You cannot deactivate your own account", 
+                Data = null
+            };
         
         var user = await _dbContext.Users.FirstOrDefaultAsync
             (x => x.Id == request.UserId, cancellationToken: cancellationToken);
@@ -43,6 +50,26 @@ public class DeactivateUserCommandHandler : IRequestHandler<DeactivateUserComman
                 Message = "User has been deactivated",
                 Data = null
             };
+        }
+        
+        if (user.UserRole == UserRole.Student)
+        {
+            var student = await _dbContext.Students.FirstOrDefaultAsync(x => x.UserId == user.Id, 
+                cancellationToken);
+            if (student != null)
+            {
+                student.IsActive = false;
+            }
+        }
+        else if (user.UserRole == UserRole.Teacher)
+        {
+            var teacher = await _dbContext.Teachers.FirstOrDefaultAsync(x => x.UserId == user.Id, 
+                cancellationToken);
+            
+            if (teacher != null)
+            {
+                teacher.IsActive = false;
+            }
         }
 
         user.IsActive = false;
