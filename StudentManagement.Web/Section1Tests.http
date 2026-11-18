@@ -1,0 +1,635 @@
+### ============================================================
+# SECTION 1 TESTS - run top to bottom, one request at a time
+# ============================================================
+# Needs an EMPTY database (drop it, start the API: it migrates and seeds the admin).
+# Tokens and ids are read from earlier responses, nothing to paste.
+# Access tokens last 15 minutes: if a request returns 401, re-send the matching login request.
+# Each request has an "EXPECT" line. Check the status code and message against it.
+# 
+# User ids on a fresh database follow creation order below
+# (admin = 1, teacher = 2, then the three registered students).
+# If your database is not fresh, change these numbers (look them up with GET /api/user).
+
+@host = http://localhost:5280
+@adminPassword = Admin@12345
+@password = Password123!
+
+@adminUserId = 1
+@teacherUserId = 2
+@student1UserId = 3
+@student2UserId = 4
+@student3UserId = 5
+
+
+### ------------------------------------------------------------
+# SETUP
+# ------------------------------------------------------------
+
+# S1 Admin login
+# @name loginAdmin
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+    client.global.set("adminToken", response.body.data.accessToken);
+%}
+
+### S2 Class A (EXPECT 200, data.id)
+# @name classA
+POST {{host}}/api/class
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Grade 1",
+  "academicYear": "2026"
+}
+
+> {%
+    client.global.set("classAId", response.body.data.id);
+%}
+
+### S3 Class B (EXPECT 200)
+# @name classB
+POST {{host}}/api/class
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Grade 2",
+  "academicYear": "2026"
+}
+
+> {%
+    client.global.set("classBId", response.body.data.id);
+%}
+
+### S4 Subject (EXPECT 200)
+# @name subject
+POST {{host}}/api/subject
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Maths",
+  "description": "Mathematics",
+  "subjectCode": "MATH101"
+}
+
+> {%
+    client.global.set("subjectId", response.body.data.id);
+%}
+
+### S5 Create teacher user (EXPECT 200, data.id = 2)
+# @name createTeacher
+POST {{host}}/api/user
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "username": "teacher01",
+  "password": "{{password}}",
+  "email": "teacher01@school.com",
+  "userRole": "Teacher"
+}
+
+### S6 Teacher login
+# @name loginTeacher
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "teacher01",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("teacherToken", response.body.data.accessToken);
+%}
+
+### S7 Teacher profile, gives the teacherId (EXPECT 200)
+# @name teacherProfile
+GET {{host}}/api/teacher/me
+Authorization: Bearer {{teacherToken}}
+
+> {%
+    client.global.set("teacherId", response.body.data.id);
+%}
+
+### S8 Assign teacher to class A + Maths (EXPECT 200)
+POST {{host}}/api/assignment/teacher
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "teacherId": {{teacherId}},
+  "schoolClassId": {{classAId}},
+  "subjectId": {{subjectId}}
+}
+
+### S9a Register student01 (EXPECT 200, user id 3)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "student01@test.com",
+  "username": "student01",
+  "password": "{{password}}"
+}
+
+### S9b Register student02 (EXPECT 200, user id 4)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "student02@test.com",
+  "username": "student02",
+  "password": "{{password}}"
+}
+
+### S9c Register student03 (EXPECT 200, user id 5). Stays unapproved on purpose.
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "student03@test.com",
+  "username": "student03",
+  "password": "{{password}}"
+}
+
+### S10 Exam 1 in class A (EXPECT 200, data = the exam id)
+# @name exam1
+POST {{host}}/api/exam
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Midterm",
+  "examType": "Midterm",
+  "startDate": "2026-12-01T09:00:00Z",
+  "endDate": "2026-12-02T09:00:00Z",
+  "schoolClassId": {{classAId}}
+}
+
+> {%
+    client.global.set("exam1Id", response.body.data);
+%}
+
+### ------------------------------------------------------------
+# TEST 1 - ApproveUser
+# ------------------------------------------------------------
+
+# 1.1 Reject student03 with isApproved=false
+# EXPECT 200, message says "not approved", nothing created
+PUT {{host}}/api/user/{{student3UserId}}/approve
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "isApproved": false
+}
+
+### 1.2 student03 must still be inactive
+# EXPECT 200, data.isActive = false
+GET {{host}}/api/user/{{student3UserId}}
+Authorization: Bearer {{adminToken}}
+
+### 1.3 Approve student01 into class A
+# EXPECT 200, "User successfully approved"
+PUT {{host}}/api/user/{{student1UserId}}/approve
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "isApproved": true,
+  "firstName": "Ann",
+  "lastName": "Lee",
+  "dateOfBirth": "2010-05-15",
+  "gender": 0,
+  "phoneNumber": "",
+  "address": "Kathmandu",
+  "schoolClassId": {{classAId}}
+}
+
+### 1.4 Approve student01 AGAIN
+# EXPECT 400, "User is already approved" (this used to be a 500)
+PUT {{host}}/api/user/{{student1UserId}}/approve
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "isApproved": true,
+  "firstName": "Ann",
+  "lastName": "Lee",
+  "dateOfBirth": "2010-05-15",
+  "gender": 0,
+  "phoneNumber": "",
+  "address": "Kathmandu",
+  "schoolClassId": {{classAId}}
+}
+
+### 1.5 Approve student02 into class A
+# EXPECT 200
+PUT {{host}}/api/user/{{student2UserId}}/approve
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "isApproved": true,
+  "firstName": "Bob",
+  "lastName": "Ray",
+  "dateOfBirth": "2010-06-20",
+  "gender": 0,
+  "phoneNumber": "",
+  "address": "Lalitpur",
+  "schoolClassId": {{classAId}}
+}
+
+### 1.6 Approve student03 with a class that does not exist
+# EXPECT 400, "School class not found or inactive"
+PUT {{host}}/api/user/{{student3UserId}}/approve
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "isApproved": true,
+  "firstName": "Cid",
+  "lastName": "Kay",
+  "dateOfBirth": "2010-07-01",
+  "gender": 0,
+  "phoneNumber": "",
+  "address": "Bhaktapur",
+  "schoolClassId": 9999
+}
+
+### 1.7 Approve student03 with an empty first name
+# EXPECT 400, validation error about first name
+PUT {{host}}/api/user/{{student3UserId}}/approve
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "isApproved": true,
+  "firstName": "",
+  "lastName": "Kay",
+  "dateOfBirth": "2010-07-01",
+  "gender": 0,
+  "phoneNumber": "",
+  "address": "Bhaktapur",
+  "schoolClassId": {{classAId}}
+}
+
+### Students can log in now, and we need their student ids
+# 1.8 student01 login
+# @name loginStudent1
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "student01",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("student1Token", response.body.data.accessToken);
+%}
+
+### 1.9 student01 profile (EXPECT 200, data.id = student id)
+# @name student1Profile
+GET {{host}}/api/student/me
+Authorization: Bearer {{student1Token}}
+
+> {%
+    client.global.set("student1Id", response.body.data.id);
+%}
+
+### 1.10 student02 login
+# @name loginStudent2
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "student02",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("student2Token", response.body.data.accessToken);
+%}
+
+### 1.11 student02 profile (EXPECT 200)
+# @name student2Profile
+GET {{host}}/api/student/me
+Authorization: Bearer {{student2Token}}
+
+> {%
+    client.global.set("student2Id", response.body.data.id);
+%}
+
+### ------------------------------------------------------------
+# TEST 2 - Marks workflow (UpdateMark, teacher sees unpublished exam)
+# ------------------------------------------------------------
+
+# 2.1 Teacher lists exams
+# EXPECT 200, the exam is in the list even though it is NOT published (used to be empty)
+GET {{host}}/api/exam
+Authorization: Bearer {{teacherToken}}
+
+### 2.2 Teacher enters a mark for student01: 30/100
+# EXPECT 200, status Draft
+# @name mark1
+POST {{host}}/api/teacher/exams/{{exam1Id}}/marks
+Authorization: Bearer {{teacherToken}}
+Content-Type: application/json
+
+{
+  "studentId": {{student1Id}},
+  "subjectId": {{subjectId}},
+  "marksObtained": 30,
+  "maxMarks": 100
+}
+
+> {%
+    client.global.set("mark1Id", response.body.data.id);
+%}
+
+### 2.3 Teacher submits the mark
+# EXPECT 200, status Submitted
+PUT {{host}}/api/teacher/marks/{{mark1Id}}/submit
+Authorization: Bearer {{teacherToken}}
+
+### 2.4 Teacher tries to edit a SUBMITTED mark
+# EXPECT 400, "Only draft or rejected marks can be edited"
+PUT {{host}}/api/teacher/marks/{{mark1Id}}
+Authorization: Bearer {{teacherToken}}
+Content-Type: application/json
+
+{
+  "marksObtained": 72,
+  "maxMarks": 100
+}
+
+### 2.5 Admin rejects the mark
+# EXPECT 200, status Rejected
+PUT {{host}}/api/admin/marks/{{mark1Id}}/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "isApproved": false,
+  "comment": "Please recheck"
+}
+
+### 2.6 Teacher corrects the rejected mark to 72/100
+# EXPECT 200, status Draft, marksObtained 72
+PUT {{host}}/api/teacher/marks/{{mark1Id}}
+Authorization: Bearer {{teacherToken}}
+Content-Type: application/json
+
+{
+  "marksObtained": 72,
+  "maxMarks": 100
+}
+
+### 2.7 Teacher submits again
+# EXPECT 200, status Submitted
+PUT {{host}}/api/teacher/marks/{{mark1Id}}/submit
+Authorization: Bearer {{teacherToken}}
+
+### 2.8 Admin approves
+# EXPECT 200, status Approved
+PUT {{host}}/api/admin/marks/{{mark1Id}}/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "isApproved": true,
+  "comment": "Verified"
+}
+
+### 2.9 Teacher enters a FAILING mark for student02: 30/100
+# EXPECT 200, status Draft
+# @name mark2
+POST {{host}}/api/teacher/exams/{{exam1Id}}/marks
+Authorization: Bearer {{teacherToken}}
+Content-Type: application/json
+
+{
+  "studentId": {{student2Id}},
+  "subjectId": {{subjectId}},
+  "marksObtained": 30,
+  "maxMarks": 100
+}
+
+> {%
+    client.global.set("mark2Id", response.body.data.id);
+%}
+
+### 2.10 Teacher submits it
+PUT {{host}}/api/teacher/marks/{{mark2Id}}/submit
+Authorization: Bearer {{teacherToken}}
+
+### 2.11 Admin approves it
+PUT {{host}}/api/admin/marks/{{mark2Id}}/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "isApproved": true,
+  "comment": "Verified"
+}
+
+### 2.12 Admin publishes the exam
+# EXPECT 200 (all marks are approved)
+PUT {{host}}/api/admin/exams/{{exam1Id}}/publish
+Authorization: Bearer {{adminToken}}
+
+
+### ------------------------------------------------------------
+# TEST 3 - Re-exam rules (run BEFORE promotion, students are still in class A)
+# ------------------------------------------------------------
+
+# 3.1 Exam 2 in class A, NOT published
+# @name exam2
+POST {{host}}/api/exam
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Final",
+  "examType": "Final",
+  "startDate": "2026-12-10T09:00:00Z",
+  "endDate": "2026-12-11T09:00:00Z",
+  "schoolClassId": {{classAId}}
+}
+
+> {%
+    client.global.set("exam2Id", response.body.data);
+%}
+
+### 3.2 student02 applies for a re-exam on the UNPUBLISHED exam 2
+# EXPECT 400, "Re-exam can only be requested after the exam results are published"
+POST {{host}}/api/student/re-exams
+Authorization: Bearer {{student2Token}}
+Content-Type: application/json
+
+{
+  "examId": {{exam2Id}},
+  "subjectId": {{subjectId}},
+  "reason": "Testing"
+}
+
+### 3.3 student02 (failed with 30) applies on the published exam 1
+# EXPECT 200
+POST {{host}}/api/student/re-exams
+Authorization: Bearer {{student2Token}}
+Content-Type: application/json
+
+{
+  "examId": {{exam1Id}},
+  "subjectId": {{subjectId}},
+  "reason": "I would like to apply for a re-examination."
+}
+
+### 3.4 student01 (passed with 72) applies on exam 1
+# EXPECT 400, "Students who passed cannot apply for a re-exam"
+POST {{host}}/api/student/re-exams
+Authorization: Bearer {{student1Token}}
+Content-Type: application/json
+
+{
+  "examId": {{exam1Id}},
+  "subjectId": {{subjectId}},
+  "reason": "Testing"
+}
+
+
+### ------------------------------------------------------------
+# TEST 4 - Promotion
+# ------------------------------------------------------------
+
+# 4.1 Promote student01 (passed) from class A to class B
+# EXPECT 200, "Promotion created" (this used to fail with "has not met the pass criteria")
+POST {{host}}/api/promotion
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "studentId": {{student1Id}},
+  "fromSchoolClassId": {{classAId}},
+  "toSchoolClassId": {{classBId}},
+  "academicYear": 2026
+}
+
+### 4.2 Promote student02 (failed)
+# EXPECT 400, "Student has not met the pass criteria"
+POST {{host}}/api/promotion
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "studentId": {{student2Id}},
+  "fromSchoolClassId": {{classAId}},
+  "toSchoolClassId": {{classBId}},
+  "academicYear": 2026
+}
+
+### 4.3 Student list
+# EXPECT 200, student01 is now in class B, student02 is still in class A
+GET {{host}}/api/student
+Authorization: Bearer {{adminToken}}
+
+### 4.4 Promote student01 again with the same from-class
+# EXPECT 400, "Student is not in the specified class" (they are in class B now)
+POST {{host}}/api/promotion
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "studentId": {{student1Id}},
+  "fromSchoolClassId": {{classAId}},
+  "toSchoolClassId": {{classBId}},
+  "academicYear": 2026
+}
+
+
+### ------------------------------------------------------------
+# TEST 5 - Activate / deactivate user keeps the profile in sync
+# ------------------------------------------------------------
+
+# 5.1 Deactivate student02's user
+# EXPECT 200
+PUT {{host}}/api/user/{{student2UserId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+### 5.2 Student list
+# EXPECT student02 shows isActive = false (the profile, not just the user)
+GET {{host}}/api/student
+Authorization: Bearer {{adminToken}}
+
+### 5.3 Activate student02's user
+# EXPECT 200
+PUT {{host}}/api/user/{{student2UserId}}/activate
+Authorization: Bearer {{adminToken}}
+
+### 5.4 Student list
+# EXPECT student02 shows isActive = true again
+GET {{host}}/api/student
+Authorization: Bearer {{adminToken}}
+
+### 5.5 Admin deactivates their own account
+# EXPECT 400, "You cannot deactivate your own account"
+PUT {{host}}/api/user/{{adminUserId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+### 5.6 Activate student03, who was never approved
+# EXPECT 400, "This student has not been approved yet..."
+PUT {{host}}/api/user/{{student3UserId}}/activate
+Authorization: Bearer {{adminToken}}
+
+
+### ------------------------------------------------------------
+# TEST 6 - Exam dates and logout
+# ------------------------------------------------------------
+
+# 6.1 Exam date with Z
+# EXPECT 200
+POST {{host}}/api/exam
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Quiz Z",
+  "examType": "Quiz",
+  "startDate": "2026-12-20T09:00:00Z",
+  "endDate": "2026-12-21T09:00:00Z",
+  "schoolClassId": {{classAId}}
+}
+
+### 6.2 Exam date WITHOUT Z
+# EXPECT 200 (used to be a 500 from Npgsql). Stored as server-local time, so prefer sending Z.
+POST {{host}}/api/exam
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Quiz no Z",
+  "examType": "Quiz",
+  "startDate": "2026-12-22T09:00:00",
+  "endDate": "2026-12-23T09:00:00",
+  "schoolClassId": {{classAId}}
+}
+
+### 6.3 Logout with a made-up refresh token
+# EXPECT 400 (used to return 200). This assumes your logout handler returns Status=false for an unknown token.
+POST {{host}}/api/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "not-a-real-token"
+}
