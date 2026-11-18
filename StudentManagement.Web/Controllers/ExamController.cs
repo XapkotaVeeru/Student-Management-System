@@ -6,7 +6,7 @@ using StudentManagement.Application.Features.Exams.Commands.CreateExam;
 using StudentManagement.Application.Features.Exams.Commands.UpdateExam;
 using StudentManagement.Application.Features.Exams.Queries.GetExams;
 
-namespace StudentManagement.Web.Controllers;
+namespace Student_Management_System.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

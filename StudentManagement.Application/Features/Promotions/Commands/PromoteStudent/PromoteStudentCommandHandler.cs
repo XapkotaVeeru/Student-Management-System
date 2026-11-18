@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using StudentManagement.Application.DTOs.Common;
 using StudentManagement.Application.DTOs.Promotions;
+using StudentManagement.Application.Features.Common;
 using StudentManagement.Application.Interfaces;
 using StudentManagement.Domain.Entities;
 using StudentManagement.Domain.Enums;
@@ -11,8 +12,6 @@ namespace StudentManagement.Application.Features.Promotions.Commands.PromoteStud
 public class PromoteStudentCommandHandler
     : IRequestHandler<PromoteStudentCommand, ResponseDto<PromotionResponseDto>>
 {
-    private const decimal PassPercentage = 40m; 
-
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
 
@@ -69,19 +68,41 @@ public class PromoteStudentCommandHandler
         if (alreadyExists)
             return Fail("A promotion already exists for this student and academic year");
 
+      
         var marks = await _context.ExamMarks
-            .Where(m => m.StudentId == student.Id
-                        && m.Status == MarkStatus.Approved
-                        && m.IsPublished
-                        && _context.Exams.Any(e => e.Id == m.ExamId
-                                                   && e.SchoolClassId == dto.FromSchoolClassId))
+            .Join(
+                _context.Exams.Where(e => e.SchoolClassId == dto.FromSchoolClassId),
+                m => m.ExamId,
+                e => e.Id,
+                (m, e) => new { Mark = m, Exam = e })
+            .Where(x => x.Mark.StudentId == student.Id
+                        && x.Mark.Status == MarkStatus.Approved
+                        && ((!x.Mark.IsReExam && x.Exam.IsPublished)
+                            || (x.Mark.IsReExam && x.Mark.IsPublished)))
+            .Select(x => x.Mark)
+            .ToListAsync(cancellationToken);
+        
+        
+        var requiredSubjectIds = await _context.ClassSubjects
+            .Where(cs => cs.SchoolClassId == dto.FromSchoolClassId)
+            .Join(
+                _context.Subjects.Where(s => s.IsActive),
+                cs => cs.SubjectId,
+                s => s.Id,
+                (cs, s) => s.Id)
             .ToListAsync(cancellationToken);
 
-        if (!PromotionRules.HasPassedAll(marks, PassPercentage))
+        var markedSubjectIds = marks.Select(m => m.SubjectId).ToHashSet();
+
+        if (requiredSubjectIds.Any(id => !markedSubjectIds.Contains(id)))
+        {
+            return Fail("Student does not have a published result for every subject in the class");
+        }
+
+        if (!PromotionRules.HasPassedAll(marks, GradingRules.PassPercentage))
         {
             return Fail("Student has not met the pass criteria");
         }
-
 
         var promotion = new StudentPromotion
         {
