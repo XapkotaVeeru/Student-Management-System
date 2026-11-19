@@ -123,6 +123,29 @@ public class EnterReExamMarkCommandHandler : IRequestHandler<EnterReExamMarkComm
             };
         }
 
+        if (!exam.IsActive)
+        {
+            return new ResponseDto<MarkResponseDto>
+            {
+                Status = false,
+                Message = "Exam is not active",
+                Data = null
+            };
+        }
+
+        var subject = await _context.Subjects.FirstOrDefaultAsync(
+            x => x.Id == application.SubjectId, cancellationToken);
+
+        if (subject == null || !subject.IsActive)
+        {
+            return new ResponseDto<MarkResponseDto>
+            {
+                Status = false,
+                Message = "Subject not found or not active",
+                Data = null
+            };
+        }
+        
         var teacherAssignment = await _context.TeacherAssignments.FirstOrDefaultAsync(
                 x =>
                     x.TeacherId == teacher.Id &&

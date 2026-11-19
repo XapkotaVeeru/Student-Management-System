@@ -67,6 +67,17 @@ public class UpdateStudentCommandHandler
                 Data = false
             };
         }
+        
+        if (_currentUserService.UserRole == UserRole.Student && !student.IsActive)
+        {
+            return new ResponseDto<bool>
+            {
+                Status = false,
+                Message = "Your account is not active",
+                Data = false
+            };
+        }
+        
 
         if (request.Student.FirstName != null)
         {

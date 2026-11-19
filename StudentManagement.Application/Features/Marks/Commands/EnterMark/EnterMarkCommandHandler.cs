@@ -83,6 +83,16 @@ public class EnterMarkCommandHandler
                 Data = null
             };
         }
+
+        if (!exam.IsActive)
+        {
+            return new ResponseDto<MarkResponseDto>
+            {
+                Status = false,
+                Message = "Exam is not active",
+                Data = null
+            };
+        }
         
         var student = await _context.Students
             .FirstOrDefaultAsync(
@@ -123,6 +133,16 @@ public class EnterMarkCommandHandler
             .FirstOrDefaultAsync(
                 x => x.Id == request.Request.SubjectId,
                 cancellationToken);
+
+        if (!subject.IsActive)
+        {
+            return new ResponseDto<MarkResponseDto>
+            {
+                Status = false,
+                Message = "Subject is not active",
+                Data = null
+            };
+        }
 
         if (subject == null)
         {

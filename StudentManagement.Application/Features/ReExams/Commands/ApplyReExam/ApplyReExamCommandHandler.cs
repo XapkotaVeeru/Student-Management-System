@@ -95,6 +95,26 @@ public class ApplyReExamCommandHandler
             };
         }
 
+        if (!subject.IsActive)
+        {
+            return new ResponseDto<ReExamResponseDto>
+            {
+                Status = false,
+                Message = "Subject is not active",
+                Data = null
+            };
+        }
+
+        if (!exam.IsActive)
+        {
+            return new ResponseDto<ReExamResponseDto>
+            {
+                Status = false,
+                Message = "Exam is not active",
+                Data = null
+            };
+        }
+        
         if (student.SchoolClassId != exam.SchoolClassId)
         {
             return new ResponseDto<ReExamResponseDto>
