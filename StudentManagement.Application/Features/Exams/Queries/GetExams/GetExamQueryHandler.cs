@@ -40,7 +40,7 @@ public class GetExamsQueryHandler : IRequestHandler<GetExamsQuery, List<ExamResp
                     x => x.UserId == userId.Value,
                     cancellationToken);
 
-            if (teacher == null)
+            if (teacher == null || !teacher.IsActive)
             {
                 return new List<ExamResponseDto>();
             }
@@ -50,8 +50,7 @@ public class GetExamsQueryHandler : IRequestHandler<GetExamsQuery, List<ExamResp
                 .Select(x => x.SchoolClassId);
 
             examsQuery = examsQuery
-                .Where(x =>
-                    teacherClassIds.Contains(x.SchoolClassId));
+                .Where(x => x.IsActive && teacherClassIds.Contains(x.SchoolClassId));
         }
         else if (userRole == UserRole.Student)
         {
@@ -60,7 +59,7 @@ public class GetExamsQueryHandler : IRequestHandler<GetExamsQuery, List<ExamResp
                     x => x.UserId == userId.Value,
                     cancellationToken);
 
-            if (student == null || !student.SchoolClassId.HasValue)
+            if (student == null || !student.IsActive || !student.SchoolClassId.HasValue)
             {
                 return new List<ExamResponseDto>();
             }
