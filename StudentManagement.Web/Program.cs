@@ -70,6 +70,9 @@ builder.Services.AddMediatR(cfg =>
 });
 
 builder.Services.AddExceptionHandler<Student_Management_System.Middleware.ValidationExceptionHandler>();
+
+builder.Services.AddExceptionHandler<Student_Management_System.Middleware.DbUpdateExceptionHandler>();
+
 builder.Services.AddProblemDetails();
 
 builder.Services.AddSwaggerGen(options =>
