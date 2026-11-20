@@ -1,7 +1,9 @@
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog.Events;
 using Microsoft.EntityFrameworkCore;
@@ -71,7 +73,7 @@ builder.Services.AddMediatR(cfg =>
 
 builder.Services.AddExceptionHandler<Student_Management_System.Middleware.ValidationExceptionHandler>();
 
-builder.Services.AddExceptionHandler<Student_Management_System.Middleware.DbUpdateExceptionHandler>();
+builder.Services.AddExceptionHandler<DbUpdateExceptionHandler>();
 
 builder.Services.AddProblemDetails();
 
@@ -125,6 +127,31 @@ builder.Services
                     builder.Configuration["Jwt:Key"] ?? ""
                 )
             )
+        };
+        
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var userIdClaim = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (!int.TryParse(userIdClaim, out var userId))
+                {
+                    context.Fail("Invalid token");
+                    return;
+                }
+
+                var db = context.HttpContext.RequestServices.GetRequiredService<IApplicationDbContext>();
+
+                var isActive = await db.Users.AnyAsync(
+                    x => x.Id == userId && x.IsActive,
+                    context.HttpContext.RequestAborted);
+
+                if (!isActive)
+                {
+                    context.Fail("User is not active");
+                }
+            }
         };
     });
 
