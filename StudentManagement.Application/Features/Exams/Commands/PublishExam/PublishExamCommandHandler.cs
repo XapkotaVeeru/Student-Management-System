@@ -43,6 +43,16 @@ public class PublishExamCommandHandler
                 Data = false
             };
         }
+        
+        if (!exam.IsActive)
+        {
+            return new ResponseDto<bool>
+            {
+                Status = false,
+                Message = "Exam is not active",
+                Data = false
+            };
+        }
 
         if (exam.IsPublished)
         {

@@ -30,6 +30,19 @@ public class DeactivateClassCommandHandler : IRequestHandler<DeactivateClassComm
                 Data = null
             };
         }
+        
+        var hasActiveStudents = await _dbContext.Students.AnyAsync(
+            x => x.SchoolClassId == request.ClassId && x.IsActive, cancellationToken);
+
+        if (hasActiveStudents)
+        {
+            return new ResponseDto<ClassResponseDto>
+            {
+                Status = false,
+                Message = "Cannot deactivate a class that still has active students.",
+                Data = null
+            };
+        }
 
         if (!schoolClass.IsActive)
         {
