@@ -50,11 +50,21 @@ public class GetMySubjectsQueryHandler
                 Data = null
             };
         }
+        
+        if (!student.IsActive)
+        {
+            return new ResponseDto<IEnumerable<SubjectResponseDto>>
+            {
+                Status = false,
+                Message = "Your account is not active",
+                Data = null
+            };
+        }
 
         var subjects = await _context.ClassSubjects
             .Where(x => x.SchoolClassId == student.SchoolClassId)
             .Join(
-                _context.Subjects,
+                _context.Subjects.Where(s => s.IsActive),
                 classSubject => classSubject.SubjectId,
                 subject => subject.Id,
                 (classSubject, subject) => new SubjectResponseDto

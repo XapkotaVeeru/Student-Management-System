@@ -52,6 +52,16 @@ public class GetMyResultsQueryHandler
             };
         }
 
+        if (!student.IsActive)
+        {
+            return new ResponseDto<IEnumerable<StudentResultResponseDto>>
+            {
+                Status = false,
+                Message = "Your account is not active",
+                Data = null
+            };
+        }
+
         var results = await _context.ExamMarks
             .Where(x =>
                 x.StudentId == student.Id &&
