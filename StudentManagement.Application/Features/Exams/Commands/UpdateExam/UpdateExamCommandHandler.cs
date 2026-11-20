@@ -54,8 +54,8 @@ public class UpdateExamCommandHandler
 
         exam.Name = dto.Name.Trim();
         exam.ExamType = dto.ExamType;
-        exam.StartDate = dto.StartDate;
-        exam.EndDate = dto.EndDate;
+        exam.StartDate = dto.StartDate.ToUniversalTime();
+        exam.EndDate = dto.EndDate.ToUniversalTime();
         exam.SchoolClassId = dto.SchoolClassId;
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -69,8 +69,8 @@ public class UpdateExamCommandHandler
                 Id = exam.Id,
                 Name = exam.Name,
                 ExamType = exam.ExamType,
-                StartDate = exam.StartDate.ToUniversalTime(),
-                EndDate = exam.EndDate.ToUniversalTime(),
+                StartDate = exam.StartDate,
+                EndDate = exam.EndDate,
                 SchoolClassId = exam.SchoolClassId,
                 IsActive = exam.IsActive,
                 IsPublished = exam.IsPublished

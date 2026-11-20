@@ -133,6 +133,16 @@ public class EnterMarkCommandHandler
             .FirstOrDefaultAsync(
                 x => x.Id == request.Request.SubjectId,
                 cancellationToken);
+        
+        if (subject == null)
+        {
+            return new ResponseDto<MarkResponseDto>
+            {
+                Status = false,
+                Message = "Subject not found",
+                Data = null
+            };
+        }
 
         if (!subject.IsActive)
         {
@@ -140,16 +150,6 @@ public class EnterMarkCommandHandler
             {
                 Status = false,
                 Message = "Subject is not active",
-                Data = null
-            };
-        }
-
-        if (subject == null)
-        {
-            return new ResponseDto<MarkResponseDto>
-            {
-                Status = false,
-                Message = "Subject not found",
                 Data = null
             };
         }
