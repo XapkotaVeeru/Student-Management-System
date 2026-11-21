@@ -1,0 +1,459 @@
+### ============================================================
+# FIX TESTS - covers the 3 fixes (EnterMark null check, UpdateExam UTC dates, DbUpdateExceptionHandler)
+# ============================================================
+# Put this file in StudentManagement.Web/ next to Section1Tests.http.
+# Run top to bottom, one request at a time. Every request has assertions:
+# Rider shows PASS/FAIL under "Tests" in the response panel.
+#
+# Works on ANY database (empty or not): it creates its own class, subject, teacher
+# and student, named with a random suffix (set in S1), so it can be re-run.
+# Access tokens last 15 minutes. If you get 401, re-run S1 and the matching login.
+#
+# Fix 3 (409 on unique violation) can only be proven with a real race.
+# Run fix3-race.sh for that. Step 3.1 here is only the normal duplicate check.
+
+@host = http://localhost:5280
+@adminPassword = Admin@12345
+@password = Password123!
+
+
+### ------------------------------------------------------------
+# SETUP
+# ------------------------------------------------------------
+
+### S1 Admin login + random suffix (EXPECT 200)
+# @name loginAdmin
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+    client.global.set("adminToken", response.body.data.accessToken);
+    client.global.set("sfx", String(new Date().getTime()).slice(-6));
+    client.test("S1 admin logged in", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S2 Class (EXPECT 200)
+POST {{host}}/api/class
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FixClass{{sfx}}",
+  "academicYear": "2026"
+}
+
+> {%
+    client.global.set("fixClassId", response.body.data.id);
+    client.test("S2 class created", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S3 Subject (EXPECT 200)
+POST {{host}}/api/subject
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FixMaths{{sfx}}",
+  "description": "Fix test subject",
+  "subjectCode": "FX{{sfx}}"
+}
+
+> {%
+    client.global.set("fixSubjectId", response.body.data.id);
+    client.test("S3 subject created", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S4 Teacher user (EXPECT 200)
+POST {{host}}/api/user
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "username": "fixteacher{{sfx}}",
+  "password": "{{password}}",
+  "email": "fixteacher{{sfx}}@school.com",
+  "userRole": "Teacher"
+}
+
+> {%
+    client.test("S4 teacher created", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S5 Teacher login (EXPECT 200)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "fixteacher{{sfx}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("fixTeacherToken", response.body.data.accessToken);
+    client.test("S5 teacher logged in", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S6 Teacher profile (EXPECT 200, gives teacher id)
+GET {{host}}/api/teacher/me
+Authorization: Bearer {{fixTeacherToken}}
+
+> {%
+    client.global.set("fixTeacherId", response.body.data.id);
+    client.test("S6 teacher profile", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S7 Assign teacher to class + subject (EXPECT 200)
+POST {{host}}/api/assignment/teacher
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "teacherId": {{fixTeacherId}},
+  "schoolClassId": {{fixClassId}},
+  "subjectId": {{fixSubjectId}}
+}
+
+> {%
+    client.test("S7 assignment created", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S8 Register student (EXPECT 200)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "fixstudent{{sfx}}@test.com",
+  "username": "fixstudent{{sfx}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.test("S8 student registered", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S9 Find the student's user id (EXPECT 200)
+GET {{host}}/api/user
+Authorization: Bearer {{adminToken}}
+
+> {%
+    const name = "fixstudent" + client.global.get("sfx");
+    const u = response.body.data.find(x => x.username === name);
+    client.test("S9 student user found", function () {
+        client.assert(u !== undefined, "user " + name + " not in list");
+    });
+    if (u) { client.global.set("fixStudentUserId", u.id); }
+%}
+
+### S10 Approve student into the class (EXPECT 200)
+PUT {{host}}/api/user/{{fixStudentUserId}}/approve
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "isApproved": true,
+  "firstName": "Fix",
+  "lastName": "Student",
+  "dateOfBirth": "2010-05-15",
+  "gender": 0,
+  "phoneNumber": "",
+  "address": "Kathmandu",
+  "schoolClassId": {{fixClassId}}
+}
+
+> {%
+    client.test("S10 student approved", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.status === true, response.body.message);
+    });
+%}
+
+### S11 Student login (EXPECT 200)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "fixstudent{{sfx}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("fixStudentToken", response.body.data.accessToken);
+    client.test("S11 student logged in", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S12 Student profile (EXPECT 200, gives student id)
+GET {{host}}/api/student/me
+Authorization: Bearer {{fixStudentToken}}
+
+> {%
+    client.global.set("fixStudentId", response.body.data.id);
+    client.test("S12 student profile", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S13 Exam in the class (EXPECT 200, data = exam id)
+POST {{host}}/api/exam
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FixExam{{sfx}}",
+  "examType": "Midterm",
+  "startDate": "2026-12-01T09:00:00Z",
+  "endDate": "2026-12-02T09:00:00Z",
+  "schoolClassId": {{fixClassId}}
+}
+
+> {%
+    client.global.set("fixExamId", response.body.data);
+    client.test("S13 exam created", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+
+### ------------------------------------------------------------
+# FIX 1 - EnterMark: subject null check before IsActive check
+# Before the fix, an unknown subject id threw NullReferenceException (500).
+# ------------------------------------------------------------
+
+### 1.1 Mark for a subject that does NOT exist
+# EXPECT 400, message "Subject not found" (used to be 500)
+POST {{host}}/api/teacher/exams/{{fixExamId}}/marks
+Authorization: Bearer {{fixTeacherToken}}
+Content-Type: application/json
+
+{
+  "studentId": {{fixStudentId}},
+  "subjectId": 99999,
+  "marksObtained": 55,
+  "maxMarks": 100
+}
+
+> {%
+    client.test("1.1 unknown subject -> 400 Subject not found", function () {
+        client.assert(response.status === 400, "status " + response.status);
+        client.assert(response.body.message === "Subject not found", "message: " + response.body.message);
+    });
+%}
+
+### 1.2a Admin deactivates the subject (EXPECT 200)
+PUT {{host}}/api/subject/{{fixSubjectId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("1.2a subject deactivated", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### 1.2b Mark for the now INACTIVE subject
+# EXPECT 400, message "Subject is not active" (the inactive check still works)
+POST {{host}}/api/teacher/exams/{{fixExamId}}/marks
+Authorization: Bearer {{fixTeacherToken}}
+Content-Type: application/json
+
+{
+  "studentId": {{fixStudentId}},
+  "subjectId": {{fixSubjectId}},
+  "marksObtained": 55,
+  "maxMarks": 100
+}
+
+> {%
+    client.test("1.2b inactive subject -> 400 Subject is not active", function () {
+        client.assert(response.status === 400, "status " + response.status);
+        client.assert(response.body.message === "Subject is not active", "message: " + response.body.message);
+    });
+%}
+
+### 1.2c Admin reactivates the subject (EXPECT 200)
+PUT {{host}}/api/subject/{{fixSubjectId}}/activate
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("1.2c subject reactivated", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### 1.3 Normal mark (positive control)
+# EXPECT 200, status Draft
+POST {{host}}/api/teacher/exams/{{fixExamId}}/marks
+Authorization: Bearer {{fixTeacherToken}}
+Content-Type: application/json
+
+{
+  "studentId": {{fixStudentId}},
+  "subjectId": {{fixSubjectId}},
+  "marksObtained": 55,
+  "maxMarks": 100
+}
+
+> {%
+    client.test("1.3 valid mark -> 200 Draft", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.data.status === "Draft", "status field: " + response.body.data.status);
+    });
+%}
+
+
+### ------------------------------------------------------------
+# FIX 2 - UpdateExam saves UTC dates
+# A date WITH an offset (or no zone) is parsed by .NET as Local/Unspecified.
+# Npgsql refuses to write that to timestamptz, so before the fix these gave 500.
+# ------------------------------------------------------------
+
+### 2.1 Update with a +05:45 offset (Nepal time)
+# 09:00 at +05:45 = 03:15 UTC.
+# EXPECT 200, startDate "2026-12-05T03:15:00Z", endDate "2026-12-06T03:15:00Z"
+PUT {{host}}/api/exam/{{fixExamId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FixExam{{sfx}}",
+  "examType": "Midterm",
+  "startDate": "2026-12-05T09:00:00+05:45",
+  "endDate": "2026-12-06T09:00:00+05:45",
+  "schoolClassId": {{fixClassId}}
+}
+
+> {%
+    client.test("2.1 offset date -> 200 and converted to UTC", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.data.startDate.startsWith("2026-12-05T03:15:00"), "startDate: " + response.body.data.startDate);
+        client.assert(response.body.data.endDate.startsWith("2026-12-06T03:15:00"), "endDate: " + response.body.data.endDate);
+    });
+%}
+
+### 2.2 Read it back from the database
+# EXPECT 200, our exam has the same UTC start as 2.1 (proves it was SAVED as UTC)
+GET {{host}}/api/exam
+Authorization: Bearer {{adminToken}}
+
+> {%
+    const list = Array.isArray(response.body) ? response.body : response.body.data;
+    const exam = list.find(x => x.id === client.global.get("fixExamId"));
+    client.test("2.2 saved value is UTC", function () {
+        client.assert(exam !== undefined, "exam not in list");
+        client.assert(exam.startDate.startsWith("2026-12-05T03:15:00"), "startDate: " + exam.startDate);
+        client.assert(exam.endDate.startsWith("2026-12-06T03:15:00"), "endDate: " + exam.endDate);
+    });
+%}
+
+### 2.3 Update with NO zone at all
+# Treated as the server's local time. The exact value depends on your Mac's time zone,
+# so we only check: EXPECT 200 and the dates come back ending in Z.
+PUT {{host}}/api/exam/{{fixExamId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FixExam{{sfx}}",
+  "examType": "Midterm",
+  "startDate": "2026-12-07T09:00:00",
+  "endDate": "2026-12-08T09:00:00",
+  "schoolClassId": {{fixClassId}}
+}
+
+> {%
+    client.test("2.3 no-zone date -> 200, UTC (ends in Z)", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.data.startDate.endsWith("Z"), "startDate: " + response.body.data.startDate);
+        client.assert(response.body.data.endDate.endsWith("Z"), "endDate: " + response.body.data.endDate);
+    });
+%}
+
+### 2.4 Update with Z (regression, the way the frontend should send it)
+# EXPECT 200, startDate exactly "2026-12-09T09:00:00Z"
+PUT {{host}}/api/exam/{{fixExamId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FixExam{{sfx}}",
+  "examType": "Midterm",
+  "startDate": "2026-12-09T09:00:00Z",
+  "endDate": "2026-12-10T09:00:00Z",
+  "schoolClassId": {{fixClassId}}
+}
+
+> {%
+    client.test("2.4 Z date unchanged", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.data.startDate === "2026-12-09T09:00:00Z", "startDate: " + response.body.data.startDate);
+        client.assert(response.body.data.endDate === "2026-12-10T09:00:00Z", "endDate: " + response.body.data.endDate);
+    });
+%}
+
+### 2.5 End date before start date (validation still works)
+# EXPECT 400, "End date cannot be before the start date"
+PUT {{host}}/api/exam/{{fixExamId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "FixExam{{sfx}}",
+  "examType": "Midterm",
+  "startDate": "2026-12-10T09:00:00Z",
+  "endDate": "2026-12-09T09:00:00Z",
+  "schoolClassId": {{fixClassId}}
+}
+
+> {%
+    client.test("2.5 end before start -> 400", function () {
+        client.assert(response.status === 400, "status " + response.status);
+    });
+%}
+
+
+### ------------------------------------------------------------
+# FIX 3 - control only (the real test is fix3-race.sh)
+# ------------------------------------------------------------
+
+### 3.1 Same mark entered twice, one after the other
+# EXPECT 400, "Mark already exists for this student and subject".
+# This is caught by the handler's own check, NOT by the database, so it is a 400.
+# The 409 only appears when two requests collide at the same instant (see fix3-race.sh).
+POST {{host}}/api/teacher/exams/{{fixExamId}}/marks
+Authorization: Bearer {{fixTeacherToken}}
+Content-Type: application/json
+
+{
+  "studentId": {{fixStudentId}},
+  "subjectId": {{fixSubjectId}},
+  "marksObtained": 60,
+  "maxMarks": 100
+}
+
+> {%
+    client.test("3.1 duplicate mark -> 400 already exists", function () {
+        client.assert(response.status === 400, "status " + response.status);
+        client.assert(response.body.message === "Mark already exists for this student and subject", "message: " + response.body.message);
+    });
+%}
