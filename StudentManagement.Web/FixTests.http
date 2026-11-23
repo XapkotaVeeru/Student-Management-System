@@ -7,7 +7,8 @@
 #
 # Works on ANY database (empty or not): it creates its own class, subject, teacher
 # and student, named with a random suffix (set in S1), so it can be re-run.
-# Access tokens last 15 minutes. If you get 401, re-run S1 and the matching login.
+# Access tokens last 15 minutes. If you get 401, DO NOT re-run S1 (it makes a new suffix and
+# breaks the logins). Re-send R1 (admin), S5 (teacher) or S11 (student) instead.
 #
 # Fix 3 (409 on unique violation) can only be proven with a real race.
 # Run fix3-race.sh for that. Step 3.1 here is only the normal duplicate check.
@@ -35,6 +36,22 @@ Content-Type: application/json
     client.global.set("adminToken", response.body.data.accessToken);
     client.global.set("sfx", String(new Date().getTime()).slice(-6));
     client.test("S1 admin logged in", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### R1 Re-login admin ONLY when you get 401 (keeps the same suffix)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+    client.global.set("adminToken", response.body.data.accessToken);
+    client.test("R1 admin re-logged in", function () {
         client.assert(response.status === 200, "status " + response.status);
     });
 %}
