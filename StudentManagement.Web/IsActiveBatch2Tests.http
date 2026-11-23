@@ -1,0 +1,625 @@
+### ============================================================
+# IS-ACTIVE BATCH 2 TESTS
+#   Items 7, 10 : teacher GetMyClasses / GetMySubjects show only ACTIVE classes and subjects
+#   Item 11     : DeactivateClass is blocked while the class has active students
+#   Item 8      : teacher exam list hides inactive exams
+#   Item 13     : an inactive exam cannot be published
+#   Part E      : exam activate / deactivate endpoints
+#   Part F      : a deactivated user's token is rejected with 401 at once
+# ============================================================
+# Put this file in StudentManagement.Web/ and run it top to bottom, one request at a time.
+# Works on any database: it creates its own classes, subject, teacher and student (suffix from S1).
+# Every request has assertions: see PASS/FAIL in the Tests tab of the response panel.
+# No manual SQL needed.
+#
+# 401? DO NOT re-run S1 (new suffix breaks the logins). Re-send R1 (admin), S5 (teacher), S11 (student).
+# Send S8 only ONCE.
+
+@host = http://localhost:5280
+@adminPassword = Admin@12345
+@password = Password123!
+
+
+### ------------------------------------------------------------
+# SETUP
+# ------------------------------------------------------------
+
+### S1 Admin login + random suffix (EXPECT 200)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+    client.global.set("adminToken", response.body.data.accessToken);
+    client.global.set("sfx", String(new Date().getTime()).slice(-6));
+    client.test("S1 admin logged in", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### R1 Re-login admin ONLY when you get 401 (keeps the same suffix)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+    client.global.set("adminToken", response.body.data.accessToken);
+    client.test("R1 admin re-logged in", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S2a Class A: will hold the student (EXPECT 200)
+POST {{host}}/api/class
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Ib2ClassA{{sfx}}",
+  "academicYear": "2026"
+}
+
+> {%
+    client.global.set("classAId", response.body.data.id);
+    client.test("S2a class A created", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S2b Class B: stays EMPTY (EXPECT 200)
+POST {{host}}/api/class
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Ib2ClassB{{sfx}}",
+  "academicYear": "2026"
+}
+
+> {%
+    client.global.set("classBId", response.body.data.id);
+    client.test("S2b class B created", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S3 Subject (EXPECT 200)
+POST {{host}}/api/subject
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Ib2Maths{{sfx}}",
+  "description": "Batch 2 test subject",
+  "subjectCode": "IB{{sfx}}"
+}
+
+> {%
+    client.global.set("subjectId", response.body.data.id);
+    client.test("S3 subject created", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S4 Teacher user (EXPECT 200)
+POST {{host}}/api/user
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "username": "ib2teacher{{sfx}}",
+  "password": "{{password}}",
+  "email": "ib2teacher{{sfx}}@school.com",
+  "userRole": "Teacher"
+}
+
+> {%
+    client.test("S4 teacher created", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S5 Teacher login (EXPECT 200)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "ib2teacher{{sfx}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("teacherToken", response.body.data.accessToken);
+    client.test("S5 teacher logged in", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S6 Teacher profile (EXPECT 200, gives the teacher id)
+GET {{host}}/api/teacher/me
+Authorization: Bearer {{teacherToken}}
+
+> {%
+    client.global.set("teacherId", response.body.data.id);
+    client.test("S6 teacher profile", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S7a Assign teacher to class A + subject (EXPECT 200)
+POST {{host}}/api/assignment/teacher
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "teacherId": {{teacherId}},
+  "schoolClassId": {{classAId}},
+  "subjectId": {{subjectId}}
+}
+
+> {%
+    client.test("S7a assigned to class A", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S7b Assign teacher to class B + subject (EXPECT 200)
+POST {{host}}/api/assignment/teacher
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "teacherId": {{teacherId}},
+  "schoolClassId": {{classBId}},
+  "subjectId": {{subjectId}}
+}
+
+> {%
+    client.test("S7b assigned to class B", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S8 Register student (EXPECT 200). Send ONCE only.
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "ib2student{{sfx}}@test.com",
+  "username": "ib2student{{sfx}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.test("S8 student registered", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S9 Find the student's user id (EXPECT 200)
+GET {{host}}/api/user
+Authorization: Bearer {{adminToken}}
+
+> {%
+    const name = "ib2student" + client.global.get("sfx");
+    const u = response.body.data.find(x => x.username === name);
+    client.test("S9 student user found", function () {
+        client.assert(u !== undefined, "user " + name + " not in list");
+    });
+    if (u) { client.global.set("studentUserId", u.id); }
+%}
+
+### S10 Approve student into class A (EXPECT 200)
+PUT {{host}}/api/user/{{studentUserId}}/approve
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "isApproved": true,
+  "firstName": "Ib",
+  "lastName": "Student",
+  "dateOfBirth": "2010-05-15",
+  "gender": 0,
+  "phoneNumber": "",
+  "address": "Kathmandu",
+  "schoolClassId": {{classAId}}
+}
+
+> {%
+    client.test("S10 student approved", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.status === true, response.body.message);
+    });
+%}
+
+### S11 Student login (EXPECT 200)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "ib2student{{sfx}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("studentToken", response.body.data.accessToken);
+    client.test("S11 student logged in", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S12 Student profile (EXPECT 200, gives the student id)
+GET {{host}}/api/student/me
+Authorization: Bearer {{studentToken}}
+
+> {%
+    client.global.set("studentId", response.body.data.id);
+    client.test("S12 student profile", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### S13 Exam in class A (EXPECT 200, data = exam id)
+POST {{host}}/api/exam
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Ib2Exam{{sfx}}",
+  "examType": "Midterm",
+  "startDate": "2026-12-01T09:00:00Z",
+  "endDate": "2026-12-02T09:00:00Z",
+  "schoolClassId": {{classAId}}
+}
+
+> {%
+    client.global.set("examId", response.body.data);
+    client.test("S13 exam created", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+
+### ============================================================
+# PART A - Items 7, 10, 11: teacher lists and DeactivateClass
+# ============================================================
+
+### A1 Teacher lists classes (control)
+# EXPECT 200, both class A and class B are listed
+GET {{host}}/api/teacher/classes
+Authorization: Bearer {{teacherToken}}
+
+> {%
+    const a = client.global.get("classAId");
+    const b = client.global.get("classBId");
+    client.test("A1 both classes listed", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.some(x => x.classId === a), "class A missing");
+        client.assert(response.body.some(x => x.classId === b), "class B missing");
+    });
+%}
+
+### A2 Teacher lists subjects (control)
+# EXPECT 200, the subject is listed
+GET {{host}}/api/teacher/subjects
+Authorization: Bearer {{teacherToken}}
+
+> {%
+    const id = client.global.get("subjectId");
+    client.test("A2 subject listed", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.some(x => x.subjectId === id), "subject missing");
+    });
+%}
+
+### A3 Deactivate class A, which still has an ACTIVE student (item 11)
+# EXPECT 400, "Cannot deactivate a class that still has active students."
+PUT {{host}}/api/class/{{classAId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("A3 class with active students cannot be deactivated", function () {
+        client.assert(response.status === 400, "status " + response.status);
+        client.assert(response.body.message === "Cannot deactivate a class that still has active students.", "message: " + response.body.message);
+    });
+%}
+
+### A4 Deactivate class B, which is empty (item 11, positive case)
+# EXPECT 200, isActive false
+PUT {{host}}/api/class/{{classBId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("A4 empty class deactivated", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.data.isActive === false, "isActive still true");
+    });
+%}
+
+### A5 Teacher lists classes again (item 7)
+# EXPECT 200, class A is listed, class B is NOT
+GET {{host}}/api/teacher/classes
+Authorization: Bearer {{teacherToken}}
+
+> {%
+    const a = client.global.get("classAId");
+    const b = client.global.get("classBId");
+    client.test("A5 inactive class hidden", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.some(x => x.classId === a), "class A missing");
+        client.assert(!response.body.some(x => x.classId === b), "inactive class B is still listed");
+    });
+%}
+
+### A6 Admin deactivates the subject (EXPECT 200)
+PUT {{host}}/api/subject/{{subjectId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("A6 subject deactivated", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### A7 Teacher lists subjects again (item 10)
+# EXPECT 200, the subject is NOT listed
+GET {{host}}/api/teacher/subjects
+Authorization: Bearer {{teacherToken}}
+
+> {%
+    const id = client.global.get("subjectId");
+    client.test("A7 inactive subject hidden", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(!response.body.some(x => x.subjectId === id), "inactive subject is still listed");
+    });
+%}
+
+### A8 Admin reactivates the subject (EXPECT 200)
+PUT {{host}}/api/subject/{{subjectId}}/activate
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("A8 subject reactivated", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+
+### ============================================================
+# PART B - Items 8, 13 and Part E: exam activate / deactivate
+# ============================================================
+
+### B1 Teacher lists exams (control)
+# EXPECT 200, the exam is listed (even though it is not published)
+GET {{host}}/api/exam
+Authorization: Bearer {{teacherToken}}
+
+> {%
+    const id = client.global.get("examId");
+    client.test("B1 exam listed for teacher", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.some(x => x.id === id), "exam missing");
+    });
+%}
+
+### B2 Admin deactivates the exam
+# EXPECT 200, "Exam deactivated successfully"
+PUT {{host}}/api/exam/{{examId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("B2 exam deactivated", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.message === "Exam deactivated successfully", "message: " + response.body.message);
+    });
+%}
+
+### B3 Deactivate the same exam again
+# EXPECT 400, "Exam is already inactive"
+PUT {{host}}/api/exam/{{examId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("B3 double deactivate rejected", function () {
+        client.assert(response.status === 400, "status " + response.status);
+        client.assert(response.body.message === "Exam is already inactive", "message: " + response.body.message);
+    });
+%}
+
+### B4 Teacher lists exams (item 8)
+# EXPECT 200, the inactive exam is NOT listed
+GET {{host}}/api/exam
+Authorization: Bearer {{teacherToken}}
+
+> {%
+    const id = client.global.get("examId");
+    client.test("B4 inactive exam hidden from teacher", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(!response.body.some(x => x.id === id), "inactive exam is still listed");
+    });
+%}
+
+### B5 Admin publishes the INACTIVE exam (item 13)
+# EXPECT 400, "Exam is not active"
+PUT {{host}}/api/admin/exams/{{examId}}/publish
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("B5 inactive exam cannot be published", function () {
+        client.assert(response.status === 400, "status " + response.status);
+        client.assert(response.body.message === "Exam is not active", "message: " + response.body.message);
+    });
+%}
+
+### B6 Admin activates the exam
+# EXPECT 200, "Exam activated successfully"
+PUT {{host}}/api/exam/{{examId}}/activate
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("B6 exam activated", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.message === "Exam activated successfully", "message: " + response.body.message);
+    });
+%}
+
+### B7 Activate the same exam again
+# EXPECT 400, "Exam is already active"
+PUT {{host}}/api/exam/{{examId}}/activate
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("B7 double activate rejected", function () {
+        client.assert(response.status === 400, "status " + response.status);
+        client.assert(response.body.message === "Exam is already active", "message: " + response.body.message);
+    });
+%}
+
+### B8 Teacher lists exams again
+# EXPECT 200, the exam is back in the list
+GET {{host}}/api/exam
+Authorization: Bearer {{teacherToken}}
+
+> {%
+    const id = client.global.get("examId");
+    client.test("B8 reactivated exam listed again", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.some(x => x.id === id), "exam missing");
+    });
+%}
+
+### B9 A teacher cannot activate or deactivate exams
+# EXPECT 403
+PUT {{host}}/api/exam/{{examId}}/deactivate
+Authorization: Bearer {{teacherToken}}
+
+> {%
+    client.test("B9 teacher gets 403", function () {
+        client.assert(response.status === 403, "status " + response.status);
+    });
+%}
+
+
+### ============================================================
+# PART C - Part F: a deactivated user's token stops working at once
+# ============================================================
+
+### C1 Teacher profile with a valid token (control)
+# EXPECT 200
+GET {{host}}/api/teacher/me
+Authorization: Bearer {{teacherToken}}
+
+> {%
+    client.test("C1 active teacher token works", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### C2 Admin deactivates the teacher (EXPECT 200)
+PUT {{host}}/api/teacher/{{teacherId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("C2 teacher deactivated", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### C3 Same teacher token, seconds later
+# EXPECT 401 (the old token is rejected immediately, not after 15 minutes)
+GET {{host}}/api/teacher/me
+Authorization: Bearer {{teacherToken}}
+
+> {%
+    client.test("C3 deactivated teacher token rejected", function () {
+        client.assert(response.status === 401, "status " + response.status);
+    });
+%}
+
+### C4 Deactivated teacher tries to log in
+# EXPECT 400, "User is not active"
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "ib2teacher{{sfx}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.test("C4 login rejected", function () {
+        client.assert(response.status === 400, "status " + response.status);
+        client.assert(response.body.message === "User is not active", "message: " + response.body.message);
+    });
+%}
+
+### C5 Admin reactivates the teacher (EXPECT 200)
+PUT {{host}}/api/teacher/{{teacherId}}/activate
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("C5 teacher reactivated", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### C6 The OLD teacher token works again
+# EXPECT 200 (the token itself is still valid, only the active check had blocked it)
+GET {{host}}/api/teacher/me
+Authorization: Bearer {{teacherToken}}
+
+> {%
+    client.test("C6 old token works after reactivation", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### C7 Admin deactivates the student (EXPECT 200)
+PUT {{host}}/api/student/{{studentId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("C7 student deactivated", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### C8 Student token after deactivation
+# EXPECT 401
+GET {{host}}/api/student/me
+Authorization: Bearer {{studentToken}}
+
+> {%
+    client.test("C8 deactivated student token rejected", function () {
+        client.assert(response.status === 401, "status " + response.status);
+    });
+%}
+
+### C9 Admin reactivates the student (EXPECT 200)
+PUT {{host}}/api/student/{{studentId}}/activate
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("C9 student reactivated", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### C10 Student token works again
+# EXPECT 200
+GET {{host}}/api/student/me
+Authorization: Bearer {{studentToken}}
+
+> {%
+    client.test("C10 student token works after reactivation", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}

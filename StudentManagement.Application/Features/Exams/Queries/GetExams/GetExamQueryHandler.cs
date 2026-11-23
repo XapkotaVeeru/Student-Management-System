@@ -66,7 +66,7 @@ public class GetExamsQueryHandler : IRequestHandler<GetExamsQuery, List<ExamResp
 
             examsQuery = examsQuery
                 .Where(x =>
-                    x.IsPublished &&
+                    x.IsActive && x.IsPublished &&
                     x.SchoolClassId == student.SchoolClassId.Value);
         }
         else

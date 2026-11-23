@@ -72,7 +72,8 @@ public class GetMySubjectsQueryHandler
                     Id = subject.Id,
                     Name = subject.Name,
                     SubjectCode = subject.SubjectCode,
-                    Description = subject.Description
+                    Description = subject.Description,
+                    IsActive = subject.IsActive
                 })
             .ToListAsync(cancellationToken);
 
