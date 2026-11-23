@@ -59,16 +59,6 @@ public class UpdateTeacherCommandHandler
             return new ResponseDto<bool>
             {
                 Status = false,
-                Message = "Your account is not active",
-                Data = false
-            };
-        }
-        
-        if (_currentUserService.UserRole == UserRole.Teacher && !teacher.IsActive)
-        {
-            return new ResponseDto<bool>
-            {
-                Status = false,
                 Message = "Teacher account is inactive",
                 Data = false
             };

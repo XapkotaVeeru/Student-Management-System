@@ -30,7 +30,7 @@ public class GetMySubjectsQueryHandler
         var teacher = await _context.Teachers.FirstOrDefaultAsync(
                 x => x.UserId == userId.Value, cancellationToken);
 
-        if (teacher == null)
+        if (teacher == null || !teacher.IsActive)
         {
             return new List<TeacherSubjectResponseDto>();
         }
@@ -38,7 +38,7 @@ public class GetMySubjectsQueryHandler
         var subjects = await _context.TeacherAssignments
             .Where(x => x.TeacherId == teacher.Id)
             .Join(
-                _context.Subjects,
+                _context.Subjects.Where(subject => subject.IsActive),
                 assignment => assignment.SubjectId,
                 subject => subject.Id,
                 (assignment, subject) => new TeacherSubjectResponseDto
