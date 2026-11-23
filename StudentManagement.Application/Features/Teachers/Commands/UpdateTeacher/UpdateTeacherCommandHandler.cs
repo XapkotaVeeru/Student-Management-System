@@ -63,6 +63,16 @@ public class UpdateTeacherCommandHandler
                 Data = false
             };
         }
+        
+        if (_currentUserService.UserRole == UserRole.Teacher && !teacher.IsActive)
+        {
+            return new ResponseDto<bool>
+            {
+                Status = false,
+                Message = "Teacher account is inactive",
+                Data = false
+            };
+        }
 
         var user = await _context.Users.FirstOrDefaultAsync(
                 x => x.Id == teacher.UserId, cancellationToken);
