@@ -1,0 +1,324 @@
+### ============================================================
+# ROADMAP ITEM 1 TESTS - one atomic save
+#   Part A: login / refresh-token / logout still persist tokens correctly
+#           (JwtService no longer saves, the handlers save once)
+#   Part B: CreateUser still creates the profile (user + profile in ONE transaction)
+# ============================================================
+# Put this file in StudentManagement.Web/ and run it top to bottom, one request at a time.
+# Works on any database (random suffix from S1). Every request has assertions:
+# see PASS/FAIL in the Tests tab of the response panel.
+#
+# 401? Send R1 (admin). Do NOT re-run S1 (it makes a new suffix).
+# Access tokens last 15 minutes, so run Part A quickly, or send R1 first.
+
+@host = http://localhost:5280
+@adminPassword = Admin@12345
+@password = Password123!
+
+
+### ------------------------------------------------------------
+# SETUP
+# ------------------------------------------------------------
+
+### S1 Admin login + random suffix (EXPECT 200)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+    client.global.set("adminToken", response.body.data.accessToken);
+    client.global.set("sfx", String(new Date().getTime()).slice(-6));
+    client.test("S1 admin logged in", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### R1 Re-login admin ONLY when you get 401 (keeps the same suffix)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+    client.global.set("adminToken", response.body.data.accessToken);
+    client.test("R1 admin re-logged in", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+
+### ============================================================
+# PART A - refresh-token flow
+# ============================================================
+
+### A1 Admin creates a teacher user
+# EXPECT 200 (CreateUser now runs inside a transaction)
+POST {{host}}/api/user
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "username": "s1teacher{{sfx}}",
+  "password": "{{password}}",
+  "email": "s1teacher{{sfx}}@school.com",
+  "userRole": "Teacher"
+}
+
+> {%
+    client.test("A1 teacher created", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.data.userRole === "Teacher", "role: " + response.body.data.userRole);
+    });
+%}
+
+### A2 Teacher logs in
+# EXPECT 200, an access token and a refresh token (rt1)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "s1teacher{{sfx}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("teacherToken", response.body.data.accessToken);
+    client.global.set("rt1", response.body.data.refreshToken);
+    client.test("A2 login returns both tokens", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(!!response.body.data.accessToken, "no access token");
+        client.assert(!!response.body.data.refreshToken, "no refresh token");
+    });
+%}
+
+### A3 Teacher profile exists (proves CreateUser saved the profile too)
+# EXPECT 200
+GET {{host}}/api/teacher/me
+Authorization: Bearer {{teacherToken}}
+
+> {%
+    client.test("A3 teacher profile exists", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### A4 Refresh with rt1
+# EXPECT 200, a NEW refresh token (rt2). This only works if login SAVED rt1.
+POST {{host}}/api/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "{{rt1}}"
+}
+
+> {%
+    const old = client.global.get("rt1");
+    client.global.set("rt2", response.body.data.refreshToken);
+    client.test("A4 refresh works, token rotated", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.data.refreshToken !== old, "refresh token was not rotated");
+    });
+%}
+
+### A5 Refresh with the OLD token rt1 again
+# EXPECT 400, message "Refresh token revoked"
+POST {{host}}/api/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "{{rt1}}"
+}
+
+> {%
+    client.test("A5 old token is revoked", function () {
+        client.assert(response.status === 400, "status " + response.status);
+        client.assert(response.body.message === "Refresh token revoked", "message: " + response.body.message);
+    });
+%}
+
+### A6 Refresh with rt2
+# EXPECT 200, another new token (rt3). This only works if the refresh SAVED rt2.
+POST {{host}}/api/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "{{rt2}}"
+}
+
+> {%
+    client.global.set("rt3", response.body.data.refreshToken);
+    client.test("A6 refreshed token was persisted and works", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### A7 Logout with rt3
+# EXPECT 200, "Logout successful"
+POST {{host}}/api/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{rt3}}"
+}
+
+> {%
+    client.test("A7 logout ok", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### A8 Refresh with the logged-out token rt3
+# EXPECT 400, "Refresh token revoked"
+POST {{host}}/api/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "{{rt3}}"
+}
+
+> {%
+    client.test("A8 logged-out token rejected", function () {
+        client.assert(response.status === 400, "status " + response.status);
+        client.assert(response.body.message === "Refresh token revoked", "message: " + response.body.message);
+    });
+%}
+
+### A9 Log in again
+# EXPECT 200, a fresh refresh token (rt4)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "s1teacher{{sfx}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("rt4", response.body.data.refreshToken);
+    client.test("A9 second login ok", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### A10 Refresh with rt4
+# EXPECT 200 (proves the Login handler itself saves the new token)
+POST {{host}}/api/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "{{rt4}}"
+}
+
+> {%
+    client.test("A10 login token was persisted", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### A11 Refresh with a token that never existed
+# EXPECT 400, "Refresh token not found"
+POST {{host}}/api/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "this-token-does-not-exist"
+}
+
+> {%
+    client.test("A11 unknown token rejected", function () {
+        client.assert(response.status === 400, "status " + response.status);
+        client.assert(response.body.message === "Refresh token not found", "message: " + response.body.message);
+    });
+%}
+
+
+### ============================================================
+# PART B - CreateUser creates the user AND the profile
+# ============================================================
+
+### B1 Admin creates a student user
+# EXPECT 200
+POST {{host}}/api/user
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "username": "s1student{{sfx}}",
+  "password": "{{password}}",
+  "email": "s1student{{sfx}}@test.com",
+  "userRole": "Student"
+}
+
+> {%
+    client.test("B1 student created", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(response.body.data.userRole === "Student", "role: " + response.body.data.userRole);
+    });
+%}
+
+### B2 Student logs in (EXPECT 200)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "s1student{{sfx}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("studentToken", response.body.data.accessToken);
+    client.test("B2 student login ok", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### B3 Student profile exists
+# EXPECT 200 (proves the student profile was saved with the user)
+GET {{host}}/api/student/me
+Authorization: Bearer {{studentToken}}
+
+> {%
+    client.test("B3 student profile exists", function () {
+        client.assert(response.status === 200, "status " + response.status);
+    });
+%}
+
+### B4 Create the same teacher username again
+# EXPECT 400, "Username already exists" (no half-created user is left behind)
+POST {{host}}/api/user
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "username": "s1teacher{{sfx}}",
+  "password": "{{password}}",
+  "email": "other{{sfx}}@school.com",
+  "userRole": "Teacher"
+}
+
+> {%
+    client.test("B4 duplicate username rejected", function () {
+        client.assert(response.status === 400, "status " + response.status);
+        client.assert(response.body.message === "Username already exists", "message: " + response.body.message);
+    });
+%}
+
+### B5 The rejected email must not exist as a user
+# EXPECT 200, no user with the email other<suffix>school.com
+GET {{host}}/api/user
+Authorization: Bearer {{adminToken}}
+
+> {%
+    const email = "other" + client.global.get("sfx") + "@school.com";
+    client.test("B5 no leftover user from the rejected request", function () {
+        client.assert(response.status === 200, "status " + response.status);
+        client.assert(!response.body.data.some(x => x.email === email), "leftover user " + email);
+    });
+%}
