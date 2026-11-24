@@ -61,6 +61,9 @@ public class LoginCommandHandler :IRequestHandler<LoginCommand ,ResponseDto<Logi
         }
 
         var token = await _jwtService.GenerateTokenAsync(user);
+        
+        await _context.SaveChangesAsync(cancellationToken);
+        
         return new ResponseDto<LoginResponseDto>
         {
             Status = true,

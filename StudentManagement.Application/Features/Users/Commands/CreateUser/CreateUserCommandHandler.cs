@@ -87,6 +87,8 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Respo
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
+        
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
         await _context.Users.AddAsync(user, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
@@ -129,8 +131,10 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Respo
 
             await _context.Students.AddAsync(student, cancellationToken);
         }
-
+        
         await _context.SaveChangesAsync(cancellationToken);
+        
+        await transaction.CommitAsync(cancellationToken);
 
         return new ResponseDto<UserResponseDto>
         {

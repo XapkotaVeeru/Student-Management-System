@@ -32,6 +32,8 @@ public interface IApplicationDbContext
     
     DbSet<StudentPromotion> StudentPromotions { get; }
     
+    Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade Database { get; }
+    
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     
     public DbSet<AccessLog> AccessLogs { get; set; }

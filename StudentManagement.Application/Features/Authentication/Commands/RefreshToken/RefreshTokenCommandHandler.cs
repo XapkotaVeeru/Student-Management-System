@@ -81,10 +81,10 @@ public class RefreshTokenCommandHandler :IRequestHandler<RefreshTokenCommand, Re
         }
         
         refreshToken.RevokedAt = DateTime.UtcNow;
+
+        var newToken = await _jwtService.GenerateTokenAsync(user);
         
         await _applicationDbContext.SaveChangesAsync(cancellationToken);
-        
-        var newToken = await _jwtService.GenerateTokenAsync(user);
 
         return new ResponseDto<LoginResponseDto>
         {

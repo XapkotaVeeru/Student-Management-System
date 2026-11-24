@@ -69,7 +69,6 @@ public class JwtService : IJwtService
         };
 
         await _dbContext.RefreshTokens.AddAsync(refreshToken);
-        await _dbContext.SaveChangesAsync();
 
         return new LoginResponseDto
         {
