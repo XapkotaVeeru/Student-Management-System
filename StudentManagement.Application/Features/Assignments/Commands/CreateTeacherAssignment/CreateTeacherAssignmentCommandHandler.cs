@@ -59,6 +59,19 @@ public class CreateTeacherAssignmentCommandHandler : IRequestHandler<CreateTeach
                 Status = false
             };
         }
+        
+        var subjectInClass = await _context.ClassSubjects.AnyAsync(x =>
+            x.SchoolClassId == dto.SchoolClassId && x.SubjectId == dto.SubjectId, cancellationToken);
+
+        if (!subjectInClass)
+        {
+            return new ResponseDto<TeacherAssignmentResponseDto>
+            {
+                Data = null,
+                Message = "This subject is not linked to this class",
+                Status = false
+            };
+        }
 
         var assignmentExists = await _context.TeacherAssignments.AnyAsync(x =>
                 x.TeacherId == dto.TeacherId && x.SchoolClassId == 
